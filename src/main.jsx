@@ -51,10 +51,35 @@ const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabase
 function statusPillClass(status, inline = false) {
   const base = 'overflow-hidden text-ellipsis whitespace-nowrap rounded-full border px-2 py-0.5 font-pixel text-[0.54rem] uppercase leading-[1.3] tracking-[0.05em]';
   const placement = inline ? 'ml-0 max-w-full' : 'ml-auto max-w-[62%]';
-  if (status === 'in_progress') return `${base} ${placement} border-ink text-ink`;
-  if (status === 'submitted' || status === 'response') return `${base} ${placement} border-ink bg-ink text-paper`;
-  if (status === 'not_interested') return `${base} ${placement} border-line text-faint line-through`;
-  return `${base} ${placement} border-line text-faint`;
+  const colors = {
+    not_started: 'border-neutral-200 bg-neutral-100 text-neutral-600',
+    in_progress: 'border-blue-200 bg-blue-50 text-blue-800',
+    submitted: 'border-violet-200 bg-violet-50 text-violet-800',
+    response: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    not_interested: 'border-rose-200 bg-rose-50 text-rose-800',
+  };
+  return `${base} ${placement} ${colors[status] || colors.not_started}`;
+}
+
+function typeTagClass(type) {
+  const colors = {
+    Scholarship: 'bg-violet-50 text-violet-800',
+    Internship: 'bg-blue-50 text-blue-800',
+    Fellowship: 'bg-indigo-50 text-indigo-800',
+    Grant: 'bg-emerald-50 text-emerald-800',
+    Competition: 'bg-amber-50 text-amber-800',
+    Conference: 'bg-cyan-50 text-cyan-800',
+    Volunteer: 'bg-lime-50 text-lime-800',
+  };
+  return colors[type] || 'bg-neutral-100 text-neutral-700';
+}
+
+function outcomeTagClass(outcome) {
+  if (outcome === 'Offer') return 'bg-emerald-50 text-emerald-800';
+  if (outcome === 'Rejected') return 'bg-rose-50 text-rose-800';
+  if (outcome === 'Interview') return 'bg-blue-50 text-blue-800';
+  if (outcome === 'Waitlisted') return 'bg-amber-50 text-amber-800';
+  return 'bg-neutral-100 text-neutral-700';
 }
 
 function App() {
@@ -358,7 +383,7 @@ function App() {
         </section>
 
         <section className="grid grid-cols-2 border-y border-line lg:grid-cols-[repeat(4,minmax(0,1fr))_minmax(230px,1.35fr)]" aria-label="Board summary">
-          {stats.map((stat, i) => <div key={stat.label} className={`border-line py-4 pr-4 lg:border-r lg:py-5 ${i % 2 === 0 ? 'border-r' : ''} ${i >= 2 ? 'border-t lg:border-t-0' : ''}`}>
+          {stats.map((stat, i) => <div key={stat.label} className={`border-line py-4 px-4 lg:py-5 ${i % 2 === 0 ? 'border-r' : ''} ${i >= 2 ? 'border-t lg:border-t-0' : ''} ${i === 0 ? 'lg:pl-0' : ''} ${i > 0 && i < 3 ? 'lg:pl-6' : ''} ${i < 3 ? 'lg:border-r' : ''}`}>
             <span className="block text-[clamp(1.9rem,3vw,2.75rem)] font-medium leading-none tracking-[-0.05em]">{stat.value}</span>
             <span className="mt-2 block font-pixel text-[0.62rem] uppercase tracking-[0.1em] text-faint">{stat.label}</span>
           </div>)}
@@ -384,7 +409,7 @@ function App() {
           </div>
         </section>
 
-        <section className="kanban-shell relative min-h-[560px] overflow-hidden rounded-2xl" aria-label="Opportunity board">
+        <section className="kanban-shell relative min-h-[560px]" aria-label="Opportunity board">
           {busy && !items.length ? <div className="board-loading grid min-h-[300px] place-items-center font-pixel text-[0.68rem] uppercase tracking-[0.1em] text-faint">Gathering the board…</div> :
             <Willow><Kanban
               cards={cards}
@@ -473,21 +498,21 @@ function OpportunityCard({ card, trackers, comments, member, teammate, onOpen })
   const due = card.deadline ? dateLabel(card.deadline) : '';
   return <div
     role="button" tabIndex={0}
-    className={`block w-full rounded-xl border px-[0.95rem] py-3.5 text-left transition duration-200 hover:-translate-y-px hover:border-ink hover:shadow-[0_5px_18px_rgba(10,10,10,0.06)] focus-visible:border-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${locked ? 'border-line bg-surface-2' : 'border-line bg-paper'}`}
+    className={`block w-full rounded-[10px] px-[0.95rem] py-3.5 text-left transition duration-200 hover:-translate-y-px hover:shadow-[0_5px_18px_rgba(10,10,10,0.07)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${locked ? 'bg-neutral-50' : 'bg-paper'}`}
     onClick={(e) => { e.stopPropagation(); onOpen(); }}
     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onOpen(); } }}
   >
     <div className="flex items-center justify-between gap-2">
-      <span className="font-pixel text-[0.56rem] uppercase tracking-[0.08em] text-faint">{card.type || 'Other'}</span>
-      {locked && <span className="flex items-center gap-1 font-pixel text-[0.56rem] uppercase tracking-[0.06em] text-muted"><Lock size={10} /> Locked</span>}
+      <span className={`rounded-full px-2 py-1 font-pixel text-[0.56rem] uppercase tracking-[0.08em] ${typeTagClass(card.type)}`}>{card.type || 'Other'}</span>
+        {locked && <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 font-pixel text-[0.56rem] uppercase tracking-[0.06em] text-emerald-800"><Lock size={10} /> Locked</span>}
     </div>
     <h3 className="mt-2 mb-0.5 text-[0.95rem] font-medium leading-[1.32] tracking-[-0.015em]">{card.title}</h3>
     {card.organization && <p className="m-0 text-[0.76rem] leading-snug text-muted">{card.organization}</p>}
-    <div className="mt-3 grid gap-1.5 border-t border-line pt-3">
+    <div className="mt-3 grid gap-1.5 pt-3">
       <ProgressPerson person={member} tracker={own} you />
       <ProgressPerson person={teammate} tracker={theirs} />
     </div>
-    <div className="mt-3 flex items-center justify-between border-t border-line pt-2.5 font-pixel text-[0.56rem] uppercase tracking-[0.05em] text-faint">
+    <div className="mt-3 flex items-center justify-between pt-2.5 font-pixel text-[0.56rem] uppercase tracking-[0.05em] text-faint">
       <span className={`flex items-center gap-1 ${isDueSoon(card.deadline) ? 'text-ink' : ''}`}>{due ? <><Clock3 size={11} />{due}</> : 'No deadline'}</span>
       <span className="flex items-center gap-1"><MessageCircle size={11} />{comments.length}</span>
     </div>
@@ -601,7 +626,7 @@ function OpportunityDrawer({ item, trackers, member, teammate, comments, activit
       <div className="mt-4 flex flex-wrap gap-3.5 text-[0.78rem] text-muted">
         {item.deadline && <span className="inline-flex items-center gap-1.5"><Clock3 size={13} /> Due {dateLabel(item.deadline)}</span>}
         {item.location && <span>{item.location}</span>}
-        {item.link && <a className="inline-flex items-center gap-1.5 text-ink underline decoration-line underline-offset-4 hover:decoration-current" href={item.link} target="_blank" rel="noreferrer"><ExternalLink size={13} /> Opportunity page</a>}
+      {item.link && <a className="inline-flex items-center gap-1.5 text-ink underline decoration-line underline-offset-4 hover:decoration-current" href={item.link} target="_blank" rel="noreferrer"><ExternalLink size={13} /> Opportunity page</a>}
       </div>
       {item.notes && <div className="mt-5 rounded-[10px] bg-surface p-4"><p className={EYEBROW}>Notes</p><p className="mt-2 whitespace-pre-wrap text-[0.82rem] leading-relaxed text-muted">{item.notes}</p></div>}
       <section className="mt-6 border-t border-line pt-6">
@@ -609,14 +634,14 @@ function OpportunityDrawer({ item, trackers, member, teammate, comments, activit
         <div className="mt-4 grid gap-2.5 sm:grid-cols-2">{people.map((p) => {
           const tracker = trackers.find((t) => t.member_id === p.id);
           const isYou = p.id === member.id;
-          return <div className={`min-w-0 rounded-[10px] border border-line bg-surface-2 p-3.5 ${isYou ? 'border-ink bg-paper' : ''}`} key={p.id}>
+          return <div className={`min-w-0 rounded-[10px] p-3.5 ${isYou ? 'bg-neutral-50 ring-1 ring-ink' : 'bg-surface'}`} key={p.id}>
             <div className="flex min-w-0 items-center gap-2">
               <span className={`grid size-[26px] shrink-0 place-items-center rounded-full font-pixel text-[0.55rem] ${isYou ? 'bg-ink text-paper' : 'border border-line bg-transparent text-ink'}`}>{initials(p.name)}</span>
               <div className="grid min-w-0 gap-1"><b className="truncate text-[0.78rem] font-medium">{isYou ? 'You' : p.name}</b><span className={statusPillClass(tracker?.status || 'not_started', true)}>{statusLabel(tracker)}</span></div>
               {tracker?.status === 'response' && <Lock size={12} className="ml-auto text-muted" />}
             </div>
-            {tracker?.status === 'response' && <div className="mt-3 border-t border-line pt-2.5"><span className="inline-block rounded-full bg-ink px-2 py-0.5 font-pixel text-[0.54rem] uppercase tracking-[0.05em] text-paper">{tracker.outcome || 'Response'}</span>{tracker.response_note && <p className="mt-2 text-[0.76rem] leading-relaxed text-muted">{tracker.response_note}</p>}</div>}
-            {tracker?.status === 'not_interested' && tracker.response_note && <div className="mt-3 border-t border-line pt-2.5"><span className="inline-block rounded-full bg-surface px-2 py-0.5 font-pixel text-[0.54rem] uppercase tracking-[0.05em] text-muted">Passed</span><p className="mt-2 text-[0.76rem] leading-relaxed text-muted">{tracker.response_note}</p></div>}
+            {tracker?.status === 'response' && <div className="mt-3 pt-2.5"><span className={`inline-block rounded-full px-2 py-0.5 font-pixel text-[0.54rem] uppercase tracking-[0.05em] ${outcomeTagClass(tracker.outcome)}`}>{tracker.outcome || 'Response'}</span>{tracker.response_note && <p className="mt-2 text-[0.76rem] leading-relaxed text-muted">{tracker.response_note}</p>}</div>}
+            {tracker?.status === 'not_interested' && tracker.response_note && <div className="mt-3 pt-2.5"><span className="inline-block rounded-full bg-neutral-100 px-2 py-0.5 font-pixel text-[0.54rem] uppercase tracking-[0.05em] text-neutral-700">Passed</span><p className="mt-2 text-[0.76rem] leading-relaxed text-muted">{tracker.response_note}</p></div>}
             {tracker?.date_applied && <div className="mt-2.5 border-t border-line pt-2 font-pixel text-[0.55rem] uppercase tracking-[0.06em] text-faint">Submitted {dateLabel(tracker.date_applied)}</div>}
           </div>;
         })}</div>
@@ -651,8 +676,8 @@ function ActivityLine({ entry, item, large = false, compact = false }) {
   else if (entry.action === 'response_logged') phrase = `logged a ${detail.outcome || 'response'} for “${item?.title || 'an opportunity'}”`;
   return <div className={`flex items-start border-b border-line ${large ? 'gap-3.5 py-4' : compact ? 'gap-2 py-2.5' : 'gap-2.5 py-3'}`}>
     <span className={`grid shrink-0 place-items-center rounded-full bg-ink font-pixel text-paper ${large ? 'size-[26px] text-[0.55rem]' : 'size-6 text-[0.5rem]'}`}>{initials(who.name)}</span>
-    <div className="min-w-0 flex-1"><p className="mt-0.5 mb-0.5 text-[0.82rem] leading-relaxed text-muted"><b className="font-medium text-ink">{who.name}</b> {phrase}</p>{entry.action === 'response_logged' && detail.note && <div className="my-1.5 border-l-2 border-ink bg-surface px-2.5 py-2 text-[0.76rem] leading-relaxed text-muted">“{detail.note}”</div>}<time className="font-pixel text-[0.55rem] tracking-[0.04em] text-faint">{since(entry.created_at)}</time></div>
-    {!compact && <span className="mt-0.5 rounded-full border border-line px-2 py-0.5 font-pixel text-[0.52rem] uppercase tracking-[0.06em] text-faint">{entry.action === 'status_changed' ? 'Status' : entry.action === 'response_logged' ? 'Response' : entry.action === 'commented' ? 'Comment' : 'Update'}</span>}
+    <div className="min-w-0 flex-1"><p className="mt-0.5 mb-0.5 text-[0.82rem] leading-relaxed text-muted"><b className="font-medium text-ink">{who.name}</b> {phrase}</p>{entry.action === 'response_logged' && detail.note && <div className="my-1.5 rounded-r-md border-l-2 border-neutral-400 bg-surface px-2.5 py-2 text-[0.76rem] leading-relaxed text-muted">“{detail.note}”</div>}<time className="font-pixel text-[0.55rem] tracking-[0.04em] text-faint">{since(entry.created_at)}</time></div>
+    {!compact && <span className={`mt-0.5 rounded-full px-2 py-0.5 font-pixel text-[0.52rem] uppercase tracking-[0.06em] ${entry.action === 'response_logged' ? 'bg-emerald-50 text-emerald-800' : entry.action === 'status_changed' ? 'bg-blue-50 text-blue-800' : entry.action === 'commented' ? 'bg-violet-50 text-violet-800' : 'bg-neutral-100 text-neutral-700'}`}>{entry.action === 'status_changed' ? 'Status' : entry.action === 'response_logged' ? 'Response' : entry.action === 'commented' ? 'Comment' : 'Update'}</span>}
   </div>;
 }
 
