@@ -9,14 +9,16 @@
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
-    "@svar-ui/react-kanban": "^2.7.0",
     "@supabase/supabase-js": "^2.57.0",
+    "@svar-ui/react-kanban": "^2.7.0",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.3.3",
     "vite": "^6.0.7"
   }
 }

@@ -38,7 +38,7 @@ create table if not exists public.workspace_members (
 
 create table if not exists public.opportunities (
   id uuid primary key default gen_random_uuid(),
-  workspace_id uuid not null references public.workspaces(id) on delete cascade,
+  workspace_id uuid not null default 'e72ec8e1-640b-4e58-b474-902691a1c3df'::uuid references public.workspaces(id) on delete cascade,
   title text not null check (char_length(title) between 1 and 240),
   organization text,
   type public.opportunity_type not null default 'Other',
@@ -93,6 +93,11 @@ create table if not exists public.activity (
 insert into public.workspaces (id, name)
 values ('e72ec8e1-640b-4e58-b474-902691a1c3df', 'Bomb site')
 on conflict (name) do nothing;
+
+-- Existing projects: make new opportunities inherit the fixed workspace.
+-- (create table if not exists does not change columns on a live table.)
+alter table public.opportunities
+  alter column workspace_id set default 'e72ec8e1-640b-4e58-b474-902691a1c3df'::uuid;
 
 -- Security-definer helpers are kept in a non-exposed schema.
 create or replace function private.is_bomb_site_member()

@@ -4,17 +4,17 @@ import { createClient } from '@supabase/supabase-js';
 import { Kanban, Willow } from '@svar-ui/react-kanban';
 import '@svar-ui/react-kanban/all.css';
 import {
-  Activity, ArrowDownUp, ArrowRight, Bell, Check, ChevronDown, CircleHelp,
-  Clock3, ExternalLink, FileText, Flame, LayoutDashboard, ListFilter, LogOut,
-  MessageCircle, MoreHorizontal, Plus, Search, Send, Settings2, ShieldCheck,
-  Sparkles, Trash2, Users, X,
+  Activity, ArrowRight, Check, ChevronDown, CircleHelp, Clock3,
+  ExternalLink, FileText, ListFilter, Lock, LogOut, MessageCircle,
+  Plus, RefreshCw, Search, Send, Settings2, Trash2, Users, X,
 } from 'lucide-react';
 import './styles.css';
 
 const WORKSPACE_NAME = 'Bomb site';
+const WORKSPACE_ID = 'e72ec8e1-640b-4e58-b474-902691a1c3df';
 const MEMBERS = [
-  { id: 'imran', name: 'Imran', email: 'ogungbayiimran@gmail.com', color: '#c45432' },
-  { id: 'elijah', name: 'Elijah', email: 'oloyedeelijah23@gmail.com', color: '#3e7890' },
+  { id: 'imran', name: 'Imran', email: 'ogungbayiimran@gmail.com' },
+  { id: 'elijah', name: 'Elijah', email: 'oloyedeelijah23@gmail.com' },
 ];
 const COLUMNS = [
   { id: 'not_started', label: 'Not started' },
@@ -27,10 +27,35 @@ const STATUS_LABELS = Object.fromEntries(COLUMNS.map((c) => [c.id, c.label]));
 const OUTCOMES = ['Offer', 'Rejected', 'Interview', 'Waitlisted', 'Other'];
 const TYPES = ['Scholarship', 'Internship', 'Fellowship', 'Grant', 'Competition', 'Conference', 'Volunteer', 'Other'];
 const EMAIL_TO_MEMBER = Object.fromEntries(MEMBERS.map((m) => [m.email.toLowerCase(), m]));
+const NAV = [
+  { id: 'board', label: 'Board' },
+  { id: 'activity', label: 'Activity' },
+  { id: 'essays', label: 'Essays' },
+];
+
+const BTN = 'inline-flex items-center justify-center gap-2 rounded-full border border-transparent text-[0.9375rem] leading-none whitespace-nowrap transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-45 [&_svg]:transition-transform [&_svg]:duration-300 hover:[&_svg]:translate-x-0.5 hover:[&_svg]:-translate-y-0.5';
+const BTN_SOLID = `${BTN} bg-ink px-5 py-3 text-paper hover:bg-[#2b2b2b]`;
+const BTN_GHOST = `${BTN} border-line px-5 py-3 text-ink hover:border-ink`;
+const BTN_SM = 'px-4 py-2.5 text-[0.8125rem]';
+const ICON_BTN = 'grid size-8 place-items-center rounded-full text-muted transition-colors hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-40';
+const EYEBROW = 'font-pixel text-[0.68rem] leading-none uppercase tracking-[0.12em] text-muted';
+const FIELD = 'grid gap-1 text-[0.72rem] text-muted';
+const INPUT = 'w-full border-0 border-b border-line bg-transparent py-2.5 text-[0.88rem] text-ink outline-none transition-colors placeholder:text-faint focus:border-ink';
+const AVATAR = 'grid size-7 shrink-0 place-items-center rounded-full bg-ink font-pixel text-[0.6rem] text-paper';
+const AVATAR_GHOST = `${AVATAR} border border-line bg-transparent text-ink`;
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+
+function statusPillClass(status, inline = false) {
+  const base = 'overflow-hidden text-ellipsis whitespace-nowrap rounded-full border px-2 py-0.5 font-pixel text-[0.54rem] uppercase leading-[1.3] tracking-[0.05em]';
+  const placement = inline ? 'ml-0 max-w-full' : 'ml-auto max-w-[62%]';
+  if (status === 'in_progress') return `${base} ${placement} border-ink text-ink`;
+  if (status === 'submitted' || status === 'response') return `${base} ${placement} border-ink bg-ink text-paper`;
+  if (status === 'not_interested') return `${base} ${placement} border-line text-faint line-through`;
+  return `${base} ${placement} border-line text-faint`;
+}
 
 function App() {
   const [session, setSession] = useState(null);
@@ -43,7 +68,6 @@ function App() {
   const [trackers, setTrackers] = useState([]);
   const [comments, setComments] = useState([]);
   const [activity, setActivity] = useState([]);
-  const [activeMember, setActiveMember] = useState(MEMBERS[0].id);
   const [page, setPage] = useState('board');
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -54,10 +78,8 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
   const [commentText, setCommentText] = useState('');
-  const [mobileNav, setMobileNav] = useState(false);
   const channelRef = useRef(null);
   const toastTimer = useRef(null);
-  const kanbanApi = useRef(null);
 
   const notify = useCallback((message) => {
     setToast(message);
@@ -129,9 +151,17 @@ function App() {
     return () => { window.removeEventListener('online', onOn); window.removeEventListener('offline', onOff); };
   }, []);
 
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [page]);
+
   const trackersFor = useCallback((oppId) => trackers.filter((t) => t.opportunity_id === oppId), [trackers]);
   const trackerFor = useCallback((oppId, memberId) => trackers.find((t) => t.opportunity_id === oppId && t.member_id === memberId), [trackers]);
   const getComments = useCallback((oppId) => comments.filter((c) => c.opportunity_id === oppId), [comments]);
+
+  const teammate = useMemo(
+    () => MEMBERS.find((m) => m.id !== member?.id) || MEMBERS[1],
+    [member],
+  );
+
   const visibleItems = useMemo(() => items.filter((item) => {
     const q = query.trim().toLowerCase();
     const matchesQ = !q || [item.title, item.organization, item.notes, item.location].some((v) => (v || '').toLowerCase().includes(q));
@@ -140,18 +170,25 @@ function App() {
   }), [items, query, typeFilter]);
 
   const cards = useMemo(() => visibleItems.map((item) => {
-    const own = trackerFor(item.id, activeMember);
+    const own = trackerFor(item.id, member?.id);
     return {
       id: item.id,
       label: item.title,
       description: item.organization || '',
       column: own?.status || 'not_started',
-      priority: own?.priority === 'High' ? 1 : own?.priority === 'Low' ? 3 : 2,
       deadline: item.deadline ? new Date(`${item.deadline}T00:00:00`) : null,
       type: item.type,
       ...item,
     };
-  }), [visibleItems, activeMember, trackerFor]);
+  }), [visibleItems, member, trackerFor]);
+
+  const ownCounts = useMemo(() => countTrackers(trackers, member?.id), [trackers, member]);
+  const teammateCounts = useMemo(() => countTrackers(trackers, teammate?.id), [trackers, teammate]);
+
+  const upcomingCount = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return items.filter((i) => i.deadline && new Date(`${i.deadline}T00:00:00`) >= today).length;
+  }, [items]);
 
   const submitLogin = async (event) => {
     event.preventDefault(); setAuthError(''); setBusy(true);
@@ -162,7 +199,10 @@ function App() {
     else setLoginPassword('');
   };
 
-  const signOut = async () => { if (supabase) await supabase.auth.signOut(); setItems([]); setTrackers([]); setComments([]); setActivity([]); };
+  const signOut = async () => {
+    if (supabase) await supabase.auth.signOut();
+    setMember(null); setItems([]); setTrackers([]); setComments([]); setActivity([]);
+  };
 
   const logActivity = async (action, opportunityId, detail = {}) => {
     if (!supabase || !member) return;
@@ -177,6 +217,7 @@ function App() {
   const createOpportunity = async (data) => {
     if (!supabase || !member) return;
     const { data: created, error } = await supabase.from('opportunities').insert({
+      workspace_id: WORKSPACE_ID,
       title: data.title,
       organization: data.organization || null,
       type: data.type,
@@ -193,9 +234,10 @@ function App() {
 
   const updateTrackerStatus = async (opportunityId, nextStatus) => {
     if (!supabase || !member) return;
-    const tracker = trackerFor(opportunityId, activeMember);
+    const tracker = trackerFor(opportunityId, member.id);
     if (!tracker) { notify('Tracker not found for this person'); await loadWorkspace(); return; }
     if (tracker.status === 'response') { notify('Responses are locked once confirmed'); await loadWorkspace(); return; }
+    if (tracker.status === nextStatus) return;
     if (nextStatus === 'response') {
       const opportunity = items.find((x) => x.id === opportunityId);
       setShowResponseForm({ opportunityId, title: opportunity?.title || 'Opportunity', tracker });
@@ -205,7 +247,7 @@ function App() {
     const { error } = await supabase.from('trackers').update({ status: nextStatus, updated_at: new Date().toISOString() }).eq('id', tracker.id);
     if (error) notify(error.message);
     else {
-      await logActivity('status_changed', opportunityId, { from: tracker.status, to: nextStatus, member_id: activeMember });
+      await logActivity('status_changed', opportunityId, { from: tracker.status, to: nextStatus, member_id: member.id });
       await loadWorkspace();
     }
   };
@@ -218,7 +260,7 @@ function App() {
       status: 'response', outcome, response_note: note.trim() || null, locked: true, updated_at: new Date().toISOString(),
     }).eq('id', pending.tracker.id);
     if (error) { notify(error.message); return; }
-    await logActivity('response_logged', pending.opportunityId, { outcome, note: note.trim(), member_id: activeMember });
+    await logActivity('response_logged', pending.opportunityId, { outcome, note: note.trim(), member_id: member.id });
     setShowResponseForm(null); await loadWorkspace(); notify('Response logged and locked');
   };
 
@@ -250,7 +292,7 @@ function App() {
   };
 
   const onMoveCard = async ({ id, column }) => {
-    const tracker = trackerFor(String(id), activeMember);
+    const tracker = trackerFor(String(id), member?.id);
     if (!tracker) { await loadWorkspace(); return; }
     if (tracker.status === 'response') { notify('This response is locked'); await loadWorkspace(); return; }
     if (column === 'response') { await updateTrackerStatus(String(id), 'response'); return; }
@@ -267,98 +309,100 @@ function App() {
   if (!member) return <LoadingScreen label="Opening Bomb site…" />;
 
   const selected = items.find((x) => x.id === selectedId);
-  const upcomingCount = items.filter((i) => i.deadline && new Date(`${i.deadline}T23:59:59`) >= new Date()).length;
+  const stats = [
+    { value: items.length, label: 'Opportunities' },
+    { value: upcomingCount, label: 'Upcoming deadlines' },
+    { value: ownCounts.in_progress, label: 'Yours in progress' },
+    { value: ownCounts.submitted, label: 'Yours submitted' },
+  ];
 
-  return <div className="app-shell">
-    <aside className={`sidebar ${mobileNav ? 'sidebar-open' : ''}`}>
-      <div className="brand-lockup">
-        <div className="brand-mark"><Flame size={20} strokeWidth={1.8} /></div>
-        <div><div className="brand-title">Bomb site</div><div className="brand-sub">THE OPPORTUNITY BOARD</div></div>
-        <button className="mobile-close icon-button" onClick={() => setMobileNav(false)} aria-label="Close menu"><X size={18} /></button>
-      </div>
-      <div className="workspace-pill"><span className="workspace-pulse" /> Shared workspace <ChevronDown size={14} /></div>
-      <div className="nav-label">Workspace</div>
-      <nav className="side-nav">
-        <button className={`nav-link ${page === 'board' ? 'active' : ''}`} onClick={() => { setPage('board'); setMobileNav(false); }}><LayoutDashboard size={17} /> Board <span className="nav-count">{items.length}</span></button>
-        <button className={`nav-link ${page === 'activity' ? 'active' : ''}`} onClick={() => { setPage('activity'); setMobileNav(false); }}><Activity size={17} /> Activity</button>
-        <button className={`nav-link ${page === 'essays' ? 'active' : ''}`} onClick={() => { setPage('essays'); setMobileNav(false); }}><FileText size={17} /> Essays <span className="coming-soon">soon</span></button>
-      </nav>
-      <div className="side-divider" />
-      <div className="nav-label">Your people</div>
-      <div className="member-list">
-        {MEMBERS.map((m) => <button key={m.id} className={`member-row ${activeMember === m.id ? 'member-current' : ''}`} onClick={() => setActiveMember(m.id)}>
-          <span className="avatar" style={{ '--avatar': m.color }}>{initials(m.name)}</span>
-          <span className="member-name">{m.id === member.id ? `${m.name} (you)` : m.name}</span>
-          <span className={`member-state ${m.id === member.id ? 'self' : ''}`}>{m.id === member.id ? 'YOU' : ''}</span>
-        </button>)}
-      </div>
-      <div className="sidebar-spacer" />
-      <div className="side-deadline-card">
-        <div className="deadline-icon"><Clock3 size={17} /></div>
-        <div><div className="deadline-big">{upcomingCount}</div><div className="deadline-small">upcoming deadlines</div></div>
-        <ArrowRight className="deadline-arrow" size={15} />
-      </div>
-      <div className="sidebar-bottom">
-        <div className="online-state"><span className={`online-dot ${online ? 'online' : ''}`} />{online ? 'Connected' : 'Offline'}</div>
-        <button className="profile-button" onClick={signOut} title="Sign out">
-          <span className="avatar profile-avatar" style={{ '--avatar': member.color }}>{initials(member.name)}</span>
-          <span className="profile-copy"><b>{member.name}</b><small>Member</small></span><LogOut size={15} />
+  return <div className="min-h-screen">
+    <header className="sticky top-0 z-50 border-b border-line bg-paper/90 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-[100rem] items-center gap-5 px-[var(--gutter)] sm:gap-8">
+        <button className="flex items-center gap-2.5 bg-transparent p-0" onClick={() => setPage('board')} aria-label="Bomb site — board">
+          <span className="grid size-8 place-items-center rounded-lg bg-ink font-pixel text-[0.62rem] tracking-[0.03em] text-paper">B/S</span>
+          <span className="hidden text-[0.95rem] font-medium tracking-[-0.02em] sm:inline">{WORKSPACE_NAME}</span>
         </button>
-      </div>
-    </aside>
-
-    {mobileNav && <button className="mobile-scrim" onClick={() => setMobileNav(false)} aria-label="Close menu" />}
-
-    <main className="main-area">
-      <header className="topbar">
-        <button className="mobile-menu icon-button" onClick={() => setMobileNav(true)} aria-label="Open menu"><MoreHorizontal size={20} /></button>
-        <div className="crumb"><span>Bomb site</span><span className="crumb-slash">/</span><b>{page === 'board' ? 'Board' : page === 'activity' ? 'Activity' : 'Essays'}</b></div>
-        <div className="top-actions">
-          <div className="live-badge"><span className={`online-dot ${online ? 'online' : ''}`} />{online ? 'Live sync' : 'Offline'}</div>
-          <button className="icon-button notification-button" title="Notifications"><Bell size={17} /><i /></button>
-          <button className="top-avatar" style={{ '--avatar': member.color }} title={member.name}>{initials(member.name)}</button>
+        <nav className="flex h-full items-center gap-5 sm:gap-7" aria-label="Primary">
+          {NAV.map((item) => <button
+            key={item.id}
+            className={`relative flex h-full items-center bg-transparent p-0 text-[0.82rem] transition-colors sm:text-sm ${page === item.id
+              ? 'text-ink after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-current'
+              : 'text-muted hover:text-ink'}`}
+            aria-current={page === item.id ? 'page' : undefined}
+            onClick={() => setPage(item.id)}
+          >{item.label}</button>)}
+        </nav>
+        <div className="ml-auto flex items-center gap-2.5 sm:gap-4">
+          <span className="flex items-center gap-1.5 font-pixel text-[0.58rem] uppercase tracking-[0.1em] text-faint sm:text-[0.62rem]">
+            <i className={`size-1.5 rounded-full ${online ? 'bg-ink' : 'bg-[#c9c9c9]'}`} />{online ? 'Live' : 'Offline'}
+          </span>
+          <span className="flex items-center gap-2" title={member.email}>
+            <span className={AVATAR}>{initials(member.name)}</span>
+            <span className="hidden text-[0.85rem] text-muted md:inline">{member.name}</span>
+          </span>
+          <button className={ICON_BTN} onClick={signOut} title="Sign out" aria-label="Sign out"><LogOut size={16} /></button>
         </div>
-      </header>
+      </div>
+    </header>
 
+    <main className="mx-auto max-w-[100rem] px-[var(--gutter)] pb-20">
       {page === 'board' && <>
-        <section className="page-heading">
+        <section className="flex flex-col items-start justify-between gap-5 pt-10 pb-8 md:flex-row md:items-end md:pt-[clamp(2.5rem,5vw,4.5rem)]">
           <div>
-            <div className="section-kicker"><Sparkles size={13} /> SHARED PURSUIT</div>
-            <h1>Opportunity board<span className="title-period">.</span></h1>
-            <p>One shared list. Two separate journeys. Keep each other moving.</p>
+            <p className={EYEBROW}>Bomb site — shared desk</p>
+            <h1 className="mt-2.5 mb-2 text-[clamp(2.4rem,5vw,4.25rem)] font-medium leading-[0.95] tracking-[-0.05em] text-balance">Opportunity board<span className="font-serif font-normal italic">.</span></h1>
+            <p className="max-w-[52ch] text-[clamp(0.95rem,1.2vw,1.05rem)] tracking-[-0.01em] text-muted">One shared list, two separate journeys. Move your own card; keep an eye on {teammate.name}’s.</p>
           </div>
-          <button className="primary-button" onClick={() => setShowOpportunityForm(true)}><Plus size={17} /> Add opportunity</button>
+          <button className={`${BTN_SOLID} w-full md:w-auto`} onClick={() => setShowOpportunityForm(true)}><Plus size={16} /> Add opportunity</button>
         </section>
 
-        <section className="board-toolbar">
-          <div className="board-view-toggle" role="tablist" aria-label="Progress owner">
-            {MEMBERS.map((m) => <button key={m.id} role="tab" aria-selected={activeMember === m.id} className={activeMember === m.id ? 'selected' : ''} onClick={() => setActiveMember(m.id)}>
-              <span className="mini-avatar" style={{ '--avatar': m.color }}>{initials(m.name)}</span>{m.id === member.id ? 'My progress' : `${m.name}’s progress`}
-            </button>)}
-          </div>
-          <div className="board-tools-right">
-            <label className="search-box"><Search size={15} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find an opportunity" /></label>
-            <label className="filter-select"><ListFilter size={14} /><select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}><option value="">All types</option>{TYPES.map((t) => <option key={t}>{t}</option>)}</select><ChevronDown size={13} /></label>
-            <button className="tool-button" onClick={loadWorkspace} title="Refresh"><ArrowDownUp size={15} /></button>
+        <section className="grid grid-cols-2 border-y border-line lg:grid-cols-[repeat(4,minmax(0,1fr))_minmax(230px,1.35fr)]" aria-label="Board summary">
+          {stats.map((stat, i) => <div key={stat.label} className={`border-line py-4 pr-4 lg:border-r lg:py-5 ${i % 2 === 0 ? 'border-r' : ''} ${i >= 2 ? 'border-t lg:border-t-0' : ''}`}>
+            <span className="block text-[clamp(1.9rem,3vw,2.75rem)] font-medium leading-none tracking-[-0.05em]">{stat.value}</span>
+            <span className="mt-2 block font-pixel text-[0.62rem] uppercase tracking-[0.1em] text-faint">{stat.label}</span>
+          </div>)}
+          <div className="col-span-2 border-t border-line py-4 lg:col-span-1 lg:py-5 lg:pl-6">
+            <p className={EYEBROW}>Watching with</p>
+            <p className="mt-2 mb-1 text-[1.05rem] font-medium tracking-[-0.02em]">{teammate.name}</p>
+            <p className="text-[0.8rem] leading-relaxed text-muted">{teammateCounts.in_progress} in progress · {teammateCounts.submitted} submitted · {teammateCounts.response} responded</p>
           </div>
         </section>
 
-        {activeMember !== member.id && <div className="viewing-banner"><ShieldCheck size={15} /> Viewing {MEMBERS.find((m) => m.id === activeMember)?.name}’s progress <span>— changes are attributed to your account.</span></div>}
+        <section className="flex flex-col items-stretch justify-between gap-3 py-5 md:flex-row md:items-center">
+          <label className="flex w-full items-center gap-2 border-b border-line py-2 text-faint transition-colors focus-within:border-ink md:w-[320px]">
+            <Search size={15} />
+            <input className="min-w-0 flex-1 border-0 bg-transparent text-sm text-ink outline-none placeholder:text-faint" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find an opportunity" aria-label="Search opportunities" />
+          </label>
+          <div className="flex flex-wrap items-center justify-between gap-2.5">
+            <label className="flex items-center gap-1.5 rounded-full border border-line px-3 py-2 text-muted">
+              <ListFilter size={14} />
+              <select className="cursor-pointer appearance-none border-0 bg-transparent text-[0.8125rem] text-ink outline-none" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} aria-label="Filter by type"><option value="">All types</option>{TYPES.map((t) => <option key={t}>{t}</option>)}</select>
+              <ChevronDown size={13} />
+            </label>
+            <button className={`${BTN_GHOST} ${BTN_SM}`} onClick={loadWorkspace} disabled={busy}><RefreshCw size={14} className={busy ? 'animate-spin' : ''} /> Refresh</button>
+          </div>
+        </section>
 
-        <section className="kanban-wrap">
-          {busy && !items.length ? <div className="board-loading">Gathering the board…</div> :
+        <section className="kanban-shell relative min-h-[560px] overflow-hidden rounded-2xl" aria-label="Opportunity board">
+          {busy && !items.length ? <div className="board-loading grid min-h-[300px] place-items-center font-pixel text-[0.68rem] uppercase tracking-[0.1em] text-faint">Gathering the board…</div> :
             <Willow><Kanban
               cards={cards}
               columns={COLUMNS}
-              init={(api) => { kanbanApi.current = api; }}
               onMoveCard={onMoveCard}
-              cardContent={({ card }) => <OpportunityCard card={card} trackers={trackersFor(card.id)} comments={getComments(card.id)} activeMember={activeMember} onOpen={() => setSelectedId(String(card.id))} />}
-              render={{ columnScroll: true, virtualizeCards: false, estimatedCardHeight: 156 }}
+              cardContent={({ card }) => <OpportunityCard card={card} trackers={trackersFor(card.id)} comments={getComments(card.id)} member={member} teammate={teammate} onOpen={() => setSelectedId(String(card.id))} />}
+              render={{ columnScroll: true, virtualizeCards: false, estimatedCardHeight: 172 }}
               readonly={false}
             /></Willow>}
-          {!visibleItems.length && <div className="board-empty"><div className="empty-stamp"><Search size={21} /></div><b>No opportunities here yet</b><span>Add one to start tracking both journeys.</span><button onClick={() => setShowOpportunityForm(true)}><Plus size={15} /> Add the first one</button></div>}
+          {!visibleItems.length && <div className="board-empty absolute left-1/2 top-[22%] z-[4] w-[min(330px,calc(100%_-_2rem))] -translate-x-1/2 rounded-2xl border border-dashed border-line bg-paper p-6 text-center shadow-[0_18px_50px_rgba(10,10,10,0.06)]">
+            <div className="mx-auto mb-1.5 grid size-9 place-items-center rounded-full border border-line text-muted"><Search size={18} /></div>
+            <b className="block text-base font-medium tracking-[-0.02em]">No opportunities here yet</b>
+            <span className="mt-1 block text-[0.8rem] text-muted">Add one and both journeys start from the same card.</span>
+            <button className="mt-2.5 inline-flex items-center gap-1.5 text-[0.8rem] font-medium underline underline-offset-4" onClick={() => setShowOpportunityForm(true)}><Plus size={14} /> Add the first one</button>
+          </div>}
         </section>
-        <div className="board-footnote"><CircleHelp size={14} /><span>Drag cards to update <b>{activeMember === member.id ? 'your' : `${MEMBERS.find((m) => m.id === activeMember)?.name}’s`}</b> progress. Response cards lock after confirmation.</span></div>
+
+        <p className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-faint [&_svg]:mt-0.5 [&_svg]:shrink-0"><CircleHelp size={14} /><span>Drag your own cards to move your progress. {teammate.name}’s status rides along on every card, and yours shows on their board too. Responses lock after confirmation.</span></p>
       </>}
 
       {page === 'activity' && <ActivityPage activity={activity} items={items} />}
@@ -366,15 +410,24 @@ function App() {
     </main>
 
     {selected && <OpportunityDrawer
-      item={selected} trackers={trackersFor(selected.id)} member={member} activeMember={activeMember} comments={getComments(selected.id)}
+      item={selected} trackers={trackersFor(selected.id)} member={member} teammate={teammate} comments={getComments(selected.id)}
       activity={activity.filter((a) => a.opportunity_id === selected.id)} onClose={() => setSelectedId(null)}
       onSave={(values) => updateOpportunity(selected.id, values)} onDelete={() => deleteOpportunity(selected.id)}
       onComment={addComment} commentText={commentText} setCommentText={setCommentText}
     />}
     {showOpportunityForm && <OpportunityForm onClose={() => setShowOpportunityForm(false)} onSave={createOpportunity} />}
     {showResponseForm && <ResponseForm pending={showResponseForm} onClose={() => setShowResponseForm(null)} onConfirm={confirmResponse} />}
-    {toast && <div className="toast"><Check size={15} />{toast}</div>}
+    {toast && <div className="fixed right-5 bottom-5 z-[80] flex items-center gap-2 rounded-full border border-white/10 bg-ink px-4 py-3 text-[0.8rem] text-paper shadow-[0_14px_40px_rgba(10,10,10,0.2)] animate-[toast-in_0.22s_ease-out] max-sm:inset-x-4 max-sm:bottom-4 max-sm:justify-center [&_svg]:text-white/70"><Check size={15} />{toast}</div>}
   </div>;
+}
+
+function countTrackers(trackers, memberId) {
+  const counts = { not_started: 0, in_progress: 0, submitted: 0, response: 0, not_interested: 0 };
+  if (!memberId) return counts;
+  trackers.filter((t) => t.member_id === memberId).forEach((t) => {
+    if (counts[t.status] !== undefined) counts[t.status] += 1;
+  });
+  return counts;
 }
 
 function mapOpportunity(row) {
@@ -386,11 +439,23 @@ function mapOpportunity(row) {
 }
 
 function initials(name) { return name.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase(); }
-function memberById(id) { return MEMBERS.find((m) => m.id === id) || { id, name: 'Member', color: '#777' }; }
+function memberById(id) { return MEMBERS.find((m) => m.id === id) || { id, name: 'Member' }; }
+function statusLabel(tracker) {
+  if (!tracker) return 'Not started';
+  if (tracker.status === 'response') return tracker.outcome || 'Response';
+  return STATUS_LABELS[tracker.status] || 'Not started';
+}
 function dateLabel(date) {
   if (!date) return '';
   const d = new Date(`${date}T00:00:00`);
   return Number.isNaN(+d) ? date : new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(d);
+}
+function isDueSoon(date) {
+  if (!date) return false;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due = new Date(`${date}T00:00:00`);
+  const days = Math.round((due - today) / 86400000);
+  return days >= 0 && days <= 7;
 }
 function since(date) {
   const ms = Date.now() - new Date(date).getTime();
@@ -401,51 +466,93 @@ function since(date) {
   const days = Math.floor(hrs / 24); return `${days}d ago`;
 }
 
-function OpportunityCard({ card, trackers, comments, activeMember, onOpen }) {
-  const active = trackers.find((t) => t.member_id === activeMember);
+function OpportunityCard({ card, trackers, comments, member, teammate, onOpen }) {
+  const own = trackers.find((t) => t.member_id === member.id);
+  const theirs = trackers.find((t) => t.member_id === teammate.id);
+  const locked = own?.status === 'response';
   const due = card.deadline ? dateLabel(card.deadline) : '';
-  const response = active?.status === 'response';
-  return <div role="button" tabIndex={0} className={`opp-kanban-card ${response ? 'response-card' : ''}`} onClick={(e) => { e.stopPropagation(); onOpen(); }} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onOpen(); } }}>
-    <div className="opp-card-top"><span className="type-tag">{card.type || 'Other'}</span>{response && <span className="locked-tag"><ShieldCheck size={11} /> Locked</span>}</div>
-    <h3>{card.title}</h3>
-    {card.organization && <div className="opp-card-org">{card.organization}</div>}
-    <div className="opp-card-people">{MEMBERS.map((m) => {
-      const t = trackers.find((x) => x.member_id === m.id);
-      return <div className={`progress-person ${m.id === activeMember ? 'person-active' : ''}`} key={m.id}>
-        <span className="mini-avatar" style={{ '--avatar': m.color }}>{initials(m.name)}</span>
-        <span className="person-label">{m.name}</span>
-        <span className="person-status" title={STATUS_LABELS[t?.status] || 'Not started'}>{t?.status === 'response' ? (t.outcome || 'Response') : STATUS_LABELS[t?.status] || 'Not started'}</span>
-      </div>;
-    })}</div>
-    <div className="opp-card-bottom">
-      {due ? <span className="due-label"><Clock3 size={12} />{due}</span> : <span className="due-label no-date">No deadline</span>}
-      <span className="comment-count"><MessageCircle size={12} />{comments.length}</span>
+  return <div
+    role="button" tabIndex={0}
+    className={`block w-full rounded-xl border px-[0.95rem] py-3.5 text-left transition duration-200 hover:-translate-y-px hover:border-ink hover:shadow-[0_5px_18px_rgba(10,10,10,0.06)] focus-visible:border-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${locked ? 'border-line bg-surface-2' : 'border-line bg-paper'}`}
+    onClick={(e) => { e.stopPropagation(); onOpen(); }}
+    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onOpen(); } }}
+  >
+    <div className="flex items-center justify-between gap-2">
+      <span className="font-pixel text-[0.56rem] uppercase tracking-[0.08em] text-faint">{card.type || 'Other'}</span>
+      {locked && <span className="flex items-center gap-1 font-pixel text-[0.56rem] uppercase tracking-[0.06em] text-muted"><Lock size={10} /> Locked</span>}
     </div>
+    <h3 className="mt-2 mb-0.5 text-[0.95rem] font-medium leading-[1.32] tracking-[-0.015em]">{card.title}</h3>
+    {card.organization && <p className="m-0 text-[0.76rem] leading-snug text-muted">{card.organization}</p>}
+    <div className="mt-3 grid gap-1.5 border-t border-line pt-3">
+      <ProgressPerson person={member} tracker={own} you />
+      <ProgressPerson person={teammate} tracker={theirs} />
+    </div>
+    <div className="mt-3 flex items-center justify-between border-t border-line pt-2.5 font-pixel text-[0.56rem] uppercase tracking-[0.05em] text-faint">
+      <span className={`flex items-center gap-1 ${isDueSoon(card.deadline) ? 'text-ink' : ''}`}>{due ? <><Clock3 size={11} />{due}</> : 'No deadline'}</span>
+      <span className="flex items-center gap-1"><MessageCircle size={11} />{comments.length}</span>
+    </div>
+  </div>;
+}
+
+function ProgressPerson({ person, tracker, you = false }) {
+  return <div className="flex min-w-0 items-center gap-2">
+    <span className={`w-[54px] shrink-0 font-pixel text-[0.56rem] uppercase tracking-[0.08em] ${you ? 'text-ink' : 'text-faint'}`}>{you ? 'You' : person.name}</span>
+    <span className={statusPillClass(tracker?.status || 'not_started')}>{statusLabel(tracker)}</span>
   </div>;
 }
 
 function LoginScreen({ email, setEmail, password, setPassword, onSubmit, error, busy, configured }) {
-  return <div className="login-screen">
-    <div className="login-art"><div className="art-orbit orbit-one"/><div className="art-orbit orbit-two"/><div className="art-spark">✳</div><div className="art-caption">GOOD THINGS<br />TAKE A LITTLE<br /><em>FOLLOW-THROUGH.</em></div><div className="art-index">B/S — 01</div></div>
-    <div className="login-panel"><div className="login-brand"><span className="brand-mark"><Flame size={20} /></span><span>Bomb site</span></div><div className="login-kicker">YOUR SHARED OPPORTUNITY DESK</div><h1>Get in.<br /><em>Get after it.</em></h1><p className="login-copy">A small shared space to find the next thing and actually follow through.</p>
-      {!configured && <div className="setup-warning"><ShieldCheck size={17} /><div><b>Backend setup needed</b><span>Connect the Supabase project first; see <code>SETUP.md</code>.</span></div></div>}
-      <form onSubmit={onSubmit} className="login-form"><label>Your account</label><select value={email} onChange={(e) => setEmail(e.target.value)}>{MEMBERS.map((m) => <option value={m.email} key={m.id}>{m.name} · {m.email}</option>)}</select><label>Password</label><input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your shared password" required /><button type="submit" disabled={busy}>{busy ? 'Opening…' : 'Enter the workspace'}<ArrowRight size={16} /></button>{error && <div className="auth-error">{error}</div>}</form>
-      <div className="login-secure"><ShieldCheck size={14} /> Private to the two of you · encrypted in transit</div>
-    </div>
+  return <div className="grid min-h-screen lg:grid-cols-[1.1fr_0.9fr]">
+    <aside className="relative flex min-h-[280px] flex-col justify-between overflow-hidden bg-ink p-6 text-paper sm:p-10 lg:min-h-screen lg:p-[clamp(2rem,4vw,3.5rem)]">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.055)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.055)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:linear-gradient(155deg,#000_0%,transparent_78%)]" />
+      <div className="relative flex items-center gap-2.5 text-[0.9rem] font-medium"><span className="grid size-8 place-items-center rounded-lg bg-paper font-pixel text-[0.62rem] tracking-[0.03em] text-ink">B/S</span><span>Bomb site</span></div>
+      <div className="relative max-w-[34rem]">
+        <p className="font-pixel text-[0.68rem] leading-none uppercase tracking-[0.12em] text-white/55">A shared opportunity desk</p>
+        <h1 className="mt-4 mb-5 text-[clamp(2.9rem,5.6vw,5.6rem)] font-medium leading-[0.9] tracking-[-0.06em]">Two people.<br />One list.<br /><em className="font-serif font-normal italic tracking-[-0.04em] text-white/60">Follow through.</em></h1>
+        <p className="max-w-[36ch] text-[0.95rem] leading-[1.65] text-white/60">A small private space to find the next thing, track it honestly, and keep each other moving.</p>
+      </div>
+      <div className="relative flex justify-between gap-4 font-pixel text-[0.6rem] uppercase tracking-[0.1em] text-white/45"><span>Private to two accounts</span><span>B/S — 01</span></div>
+    </aside>
+    <main className="flex items-center justify-center p-6 sm:p-10 lg:p-[clamp(1.5rem,4vw,3.5rem)]">
+      <div className="w-full max-w-[390px]">
+        <div className="flex items-center gap-2 text-[0.95rem] font-medium"><span className="grid size-8 place-items-center rounded-lg bg-ink font-pixel text-[0.62rem] tracking-[0.03em] text-paper">B/S</span><span>Bomb site</span></div>
+        <p className={`${EYEBROW} mt-10`}>Sign in</p>
+        <h2 className="mt-2.5 mb-2.5 text-[clamp(2rem,3.5vw,3rem)] font-medium leading-[0.98] tracking-[-0.045em]">Get in.<br />Get after it.</h2>
+        <p className="text-[0.88rem] leading-[1.65] text-muted">Use your own account. The board is shared; your progress is yours.</p>
+        {!configured && <div className="mt-4 flex gap-2 rounded-[9px] border border-line bg-surface p-3 text-[0.76rem] leading-relaxed text-muted"><Lock size={16} className="mt-0.5 shrink-0" /><div><b className="font-medium text-ink">Backend setup needed</b><span className="block">Connect the Supabase project first; see <code className="font-pixel text-[0.68rem]">SETUP.md</code>.</span></div></div>}
+        <form onSubmit={onSubmit} className="mt-8 grid gap-3.5">
+          <label className="grid gap-1.5 text-[0.72rem] text-muted">Your account<select className="w-full border-0 border-b border-line bg-transparent py-2.5 text-[0.9rem] text-ink outline-none transition-colors focus:border-ink" value={email} onChange={(e) => setEmail(e.target.value)}>{MEMBERS.map((m) => <option value={m.email} key={m.id}>{m.name} · {m.email}</option>)}</select></label>
+          <label className="grid gap-1.5 text-[0.72rem] text-muted">Password<input type="password" autoComplete="current-password" className="w-full border-0 border-b border-line bg-transparent py-2.5 text-[0.9rem] text-ink outline-none transition-colors focus:border-ink" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" required /></label>
+          <button type="submit" className={`${BTN_SOLID} mt-2 w-full`} disabled={busy}>{busy ? 'Opening…' : 'Enter the workspace'}<ArrowRight size={16} /></button>
+          {error && <div className="text-[0.78rem] leading-relaxed">{error}</div>}
+        </form>
+        <div className="mt-5 flex items-center gap-1.5 text-[0.7rem] text-faint"><Lock size={12} /> Private to the two of you · encrypted in transit</div>
+      </div>
+    </main>
   </div>;
 }
 
-function LoadingScreen({ label = 'Warming up your desk…' }) { return <div className="loading-screen"><div className="loader-flame"><Flame size={23} /></div><span>{label}</span></div>; }
+function LoadingScreen({ label = 'Warming up your desk…' }) {
+  return <div className="grid min-h-screen place-content-center justify-items-center gap-3.5 bg-paper"><div className="grid size-12 place-items-center rounded-xl bg-ink font-pixel text-[0.7rem] text-paper animate-pulse">B/S</div><span className="font-pixel text-[0.62rem] uppercase tracking-[0.1em] text-faint">{label}</span></div>;
+}
 
 function OpportunityForm({ onClose, onSave }) {
   const [form, setForm] = useState({ title: '', organization: '', type: 'Scholarship', deadline: '', link: '', location: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const submit = async (e) => { e.preventDefault(); if (!form.title.trim()) return; setSaving(true); await onSave({ ...form, title: form.title.trim() }); setSaving(false); };
-  return <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}><form className="modal-card" onSubmit={submit}>
-    <div className="modal-head"><div><span className="section-kicker">SHARED LIST</span><h2>Add an opportunity</h2><p>It’ll appear for both of you, with separate progress trackers.</p></div><button type="button" className="icon-button" onClick={onClose}><X size={18} /></button></div>
-    <div className="form-grid"><label className="field full">Opportunity name<input autoFocus value={form.title} onChange={set('title')} placeholder="e.g. Jim Ovia Foundation Scholarship" required /></label><label className="field">Organisation<input value={form.organization} onChange={set('organization')} placeholder="Who’s offering it?" /></label><label className="field">Type<select value={form.type} onChange={set('type')}>{TYPES.map((t) => <option key={t}>{t}</option>)}</select></label><label className="field">Deadline<input type="date" value={form.deadline} onChange={set('deadline')} /></label><label className="field">Location<input value={form.location} onChange={set('location')} placeholder="Remote, Nigeria…" /></label><label className="field full">Link<input type="url" value={form.link} onChange={set('link')} placeholder="https://…" /></label><label className="field full">Notes<textarea value={form.notes} onChange={set('notes')} rows="3" placeholder="Requirements, who shared it, anything worth remembering…" /></label></div>
-    <div className="modal-actions"><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? 'Saving…' : <><Plus size={16} /> Add to board</>}</button></div>
+  return <div className="fixed inset-0 z-[70] grid place-items-center bg-ink/30 p-5 backdrop-blur animate-[fade-in_0.16s_ease]" onMouseDown={(e) => e.target === e.currentTarget && onClose()}><form className="relative max-h-[calc(100vh-2.5rem)] w-full max-w-[600px] overflow-auto rounded-[18px] border border-line bg-paper p-5 shadow-[0_30px_90px_rgba(10,10,10,0.18)] animate-[modal-in_0.2s_ease-out] sm:p-6" onSubmit={submit}>
+    <div className="mb-5 flex justify-between gap-4"><div><p className={EYEBROW}>Shared list</p><h2 className="mt-1.5 text-[1.65rem] font-medium tracking-[-0.04em]">Add an opportunity</h2><p className="mt-0.5 text-[0.82rem] text-muted">It appears for both of you, with a separate tracker each.</p></div><button type="button" className={ICON_BTN} onClick={onClose} aria-label="Close"><X size={18} /></button></div>
+    <div className="grid gap-x-4 gap-y-3.5 sm:grid-cols-2">
+      <label className={`${FIELD} sm:col-span-2`}>Opportunity name<input autoFocus className={INPUT} value={form.title} onChange={set('title')} placeholder="e.g. Jim Ovia Foundation Scholarship" required /></label>
+      <label className={FIELD}>Organisation<input className={INPUT} value={form.organization} onChange={set('organization')} placeholder="Who’s offering it?" /></label>
+      <label className={FIELD}>Type<select className={`${INPUT} cursor-pointer appearance-none`} value={form.type} onChange={set('type')}>{TYPES.map((t) => <option key={t}>{t}</option>)}</select></label>
+      <label className={FIELD}>Deadline<input type="date" className={INPUT} value={form.deadline} onChange={set('deadline')} /></label>
+      <label className={FIELD}>Location<input className={INPUT} value={form.location} onChange={set('location')} placeholder="Remote, Nigeria…" /></label>
+      <label className={`${FIELD} sm:col-span-2`}>Link<input type="url" className={INPUT} value={form.link} onChange={set('link')} placeholder="https://…" /></label>
+      <label className={`${FIELD} sm:col-span-2`}>Notes<textarea className={`${INPUT} resize-y leading-relaxed`} value={form.notes} onChange={set('notes')} rows="3" placeholder="Requirements, who shared it, anything worth remembering…" /></label>
+    </div>
+    <div className="mt-5 flex justify-end gap-2 border-t border-line pt-4"><button type="button" className={BTN_GHOST} onClick={onClose}>Cancel</button><button className={BTN_SOLID} disabled={saving}>{saving ? 'Saving…' : <><Plus size={16} /> Add to board</>}</button></div>
   </form></div>;
 }
 
@@ -453,50 +560,86 @@ function ResponseForm({ pending, onClose, onConfirm }) {
   const [outcome, setOutcome] = useState('Offer');
   const [note, setNote] = useState('');
   const rejected = outcome === 'Rejected';
-  return <div className="overlay response-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}><form className="modal-card response-modal" onSubmit={(e) => { e.preventDefault(); onConfirm(outcome, note); }}>
-    <div className="response-stamp"><ShieldCheck size={19} /></div><button type="button" className="icon-button response-close" onClick={onClose}><X size={17} /></button>
-    <span className="section-kicker">CLOSE THE LOOP</span><h2>Log their response</h2><p className="response-opportunity">{pending.title}</p><div className="lock-explainer"><ShieldCheck size={15} /><span>Confirming locks <b>your progress</b> on this opportunity. You can still read it and comment.</span></div>
-    <label className="field">What did they say?<select value={outcome} onChange={(e) => setOutcome(e.target.value)}>{OUTCOMES.map((o) => <option key={o}>{o}</option>)}</select></label>
-    <label className="field response-note">{rejected ? 'Reason for rejection (required)' : 'Note (optional)'}<textarea autoFocus={rejected} value={note} onChange={(e) => setNote(e.target.value)} rows="3" required={rejected} placeholder={rejected ? 'Add the reason so you both know for next time…' : 'Any useful details, dates or next steps…'} /></label>
-    <div className="modal-actions"><button type="button" className="secondary-button" onClick={onClose}>Keep it open</button><button className="primary-button" disabled={rejected && !note.trim()}><ShieldCheck size={16} /> Confirm &amp; lock</button></div>
+  return <div className="fixed inset-0 z-[70] grid place-items-center bg-ink/30 p-5 backdrop-blur animate-[fade-in_0.16s_ease]" onMouseDown={(e) => e.target === e.currentTarget && onClose()}><form className="relative max-h-[calc(100vh-2.5rem)] w-full max-w-[460px] overflow-auto rounded-[18px] border border-line bg-paper p-5 shadow-[0_30px_90px_rgba(10,10,10,0.18)] animate-[modal-in_0.2s_ease-out] sm:p-6" onSubmit={(e) => { e.preventDefault(); onConfirm(outcome, note); }}>
+    <div className="mb-4 grid size-[38px] place-items-center rounded-full border border-line text-ink"><Lock size={18} /></div><button type="button" className={`${ICON_BTN} absolute right-3.5 top-3.5`} onClick={onClose} aria-label="Close"><X size={17} /></button>
+    <p className={EYEBROW}>Close the loop</p><h2 className="mt-1.5 text-[1.65rem] font-medium tracking-[-0.04em]">Log their response</h2><p className="mb-3.5 text-[0.82rem] text-muted">{pending.title}</p>
+    <div className="my-3.5 flex gap-2 rounded-[9px] border border-line bg-surface p-3 text-[0.76rem] leading-relaxed text-muted"><Lock size={15} className="mt-0.5 shrink-0" /><span>Confirming locks <b className="font-medium text-ink">your progress</b> on this opportunity. You can still read it and comment.</span></div>
+    <label className={FIELD}>What did they say?<select className={`${INPUT} cursor-pointer appearance-none`} value={outcome} onChange={(e) => setOutcome(e.target.value)}>{OUTCOMES.map((o) => <option key={o}>{o}</option>)}</select></label>
+    <label className={`${FIELD} mt-3.5`}>{rejected ? 'Reason for rejection (required)' : 'Note (optional)'}<textarea className={`${INPUT} resize-y leading-relaxed`} autoFocus={rejected} value={note} onChange={(e) => setNote(e.target.value)} rows="3" required={rejected} placeholder={rejected ? 'Add the reason so you both know for next time…' : 'Any useful details, dates or next steps…'} /></label>
+    <div className="mt-5 flex justify-end gap-2 border-t border-line pt-4"><button type="button" className={BTN_GHOST} onClick={onClose}>Keep it open</button><button className={BTN_SOLID} disabled={rejected && !note.trim()}><Lock size={15} /> Confirm &amp; lock</button></div>
   </form></div>;
 }
 
-function OpportunityDrawer({ item, trackers, member, activeMember, comments, activity, onClose, onSave, onDelete, onComment, commentText, setCommentText }) {
-  const activeTracker = trackers.find((t) => t.member_id === activeMember);
-  const responseLocked = activeTracker?.status === 'response';
+function OpportunityDrawer({ item, trackers, member, teammate, comments, activity, onClose, onSave, onDelete, onComment, commentText, setCommentText }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(item);
   useEffect(() => { setForm(item); setEditing(false); }, [item.id]);
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const submit = (e) => { e.preventDefault(); onSave(form); setEditing(false); };
-  return <div className="drawer-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}><aside className="detail-drawer">
-    <div className="drawer-topline"><span className="drawer-kind">{item.type || 'Opportunity'}</span><div className="drawer-actions"><button className="icon-button" title={responseLocked ? 'This progress is locked' : 'Edit'} disabled={responseLocked} onClick={() => setEditing((v) => !v)}><Settings2 size={17} /></button><button className="icon-button danger-icon" title="Delete" onClick={onDelete}><Trash2 size={16} /></button><button className="icon-button" onClick={onClose}><X size={18} /></button></div></div>
-    {editing ? <form onSubmit={submit} className="drawer-edit"><h2>Edit opportunity</h2><label className="field">Title<input value={form.title} onChange={set('title')} required /></label><label className="field">Organisation<input value={form.organization} onChange={set('organization')} /></label><div className="form-grid"><label className="field">Type<select value={form.type} onChange={set('type')}>{TYPES.map((t) => <option key={t}>{t}</option>)}</select></label><label className="field">Deadline<input type="date" value={form.deadline} onChange={set('deadline')} /></label></div><label className="field">Location<input value={form.location} onChange={set('location')} /></label><label className="field">Link<input type="url" value={form.link} onChange={set('link')} /></label><label className="field">Notes<textarea rows="4" value={form.notes} onChange={set('notes')} /></label><div className="drawer-edit-actions"><button type="button" className="secondary-button" onClick={() => setEditing(false)}>Cancel</button><button className="primary-button"><Check size={15} /> Save</button></div></form> : <>
-      <div className="drawer-title-wrap"><h1>{item.title}</h1>{item.organization && <div className="drawer-org">{item.organization}</div>}</div>
-      <div className="drawer-meta">{item.deadline && <span><Clock3 size={14} /> Due {dateLabel(item.deadline)}</span>}{item.location && <span>{item.location}</span>}{item.link && <a href={item.link} target="_blank" rel="noreferrer"><ExternalLink size={13} /> Opportunity page</a>}</div>
-      {item.notes && <div className="drawer-note"><span className="drawer-label">NOTES</span><p>{item.notes}</p></div>}
-      <section className="drawer-section"><div className="drawer-section-head"><div><span className="drawer-label">TWO SEPARATE JOURNEYS</span><h3>Progress</h3></div><Users size={17} /></div><div className="tracker-stack">{MEMBERS.map((m) => {
-        const tracker = trackers.find((t) => t.member_id === m.id);
-        return <div className="tracker-detail" key={m.id}><div className="tracker-detail-head"><span className="avatar" style={{ '--avatar': m.color }}>{initials(m.name)}</span><div className="tracker-person-copy"><b>{m.id === member.id ? `${m.name} (you)` : m.name}</b><span>{STATUS_LABELS[tracker?.status] || 'Not started'}</span></div>{tracker?.status === 'response' && <span className="locked-tag"><ShieldCheck size={11} /> Locked</span>}</div>
-          {tracker?.status === 'response' && <div className="response-receipt"><span className="outcome-pill">{tracker.outcome || 'Response'}</span>{tracker.response_note && <p>{tracker.response_note}</p>}</div>}
-          {tracker?.status === 'not_interested' && tracker.response_note && <div className="response-receipt"><span className="outcome-pill muted-pill">Passed</span><p>{tracker.response_note}</p></div>}
-          {tracker?.date_applied && <div className="tracker-detail-foot">Submitted {dateLabel(tracker.date_applied)}</div>}
-        </div>;
-      })}</div></section>
-      <section className="drawer-section comment-section"><div className="drawer-section-head"><div><span className="drawer-label">KEEP EACH OTHER IN THE LOOP</span><h3>Comments <span className="comment-total">{comments.length}</span></h3></div><MessageCircle size={17} /></div>
-        <div className="comment-list">{comments.length ? comments.map((c) => { const m = memberById(c.author_id); return <div className="comment" key={c.id}><span className="avatar comment-avatar" style={{ '--avatar': m.color }}>{initials(m.name)}</span><div className="comment-body"><div className="comment-by"><b>{m.name}</b><time>{since(c.created_at)}</time></div><p>{c.body}</p></div></div>; }) : <div className="no-comments">No comments yet. Share a thought or offer to review.</div>}</div>
-        <form className="comment-form" onSubmit={onComment}><input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder="Write a comment…" /><button disabled={!commentText.trim()} aria-label="Send comment"><Send size={16} /></button></form>
+  const people = [member, teammate];
+
+  return <div className="fixed inset-0 z-[60] flex justify-end bg-ink/25 backdrop-blur-sm animate-[fade-in_0.18s_ease]" onMouseDown={(e) => e.target === e.currentTarget && onClose()}><aside className="flex h-full w-full max-w-[540px] flex-col overflow-auto border-l border-line bg-paper px-4 pb-8 pt-6 shadow-[-24px_0_70px_rgba(10,10,10,0.1)] animate-[drawer-in_0.3s_ease-out] sm:px-6" aria-label="Opportunity details">
+    <div className="flex items-center justify-between">
+      <span className="font-pixel text-[0.62rem] uppercase tracking-[0.1em] text-muted">{item.type || 'Opportunity'}</span>
+      <div className="flex gap-0.5">
+        <button className={ICON_BTN} title="Edit opportunity" onClick={() => setEditing((v) => !v)}><Settings2 size={17} /></button>
+        <button className={`${ICON_BTN} hover:text-ink`} title="Delete" onClick={onDelete}><Trash2 size={16} /></button>
+        <button className={ICON_BTN} onClick={onClose} aria-label="Close"><X size={18} /></button>
+      </div>
+    </div>
+    {editing ? <form onSubmit={submit} className="mt-6 grid gap-4">
+      <h2 className="mb-1 text-[1.35rem] font-medium tracking-[-0.035em]">Edit opportunity</h2>
+      <label className={FIELD}>Title<input className={INPUT} value={form.title} onChange={set('title')} required /></label>
+      <label className={FIELD}>Organisation<input className={INPUT} value={form.organization} onChange={set('organization')} /></label>
+      <div className="grid gap-4 sm:grid-cols-2"><label className={FIELD}>Type<select className={`${INPUT} cursor-pointer appearance-none`} value={form.type} onChange={set('type')}>{TYPES.map((t) => <option key={t}>{t}</option>)}</select></label><label className={FIELD}>Deadline<input type="date" className={INPUT} value={form.deadline} onChange={set('deadline')} /></label></div>
+      <label className={FIELD}>Location<input className={INPUT} value={form.location} onChange={set('location')} /></label>
+      <label className={FIELD}>Link<input type="url" className={INPUT} value={form.link} onChange={set('link')} /></label>
+      <label className={FIELD}>Notes<textarea className={`${INPUT} resize-y leading-relaxed`} rows="4" value={form.notes} onChange={set('notes')} /></label>
+      <div className="flex justify-end gap-2 pt-1"><button type="button" className={BTN_GHOST} onClick={() => setEditing(false)}>Cancel</button><button className={BTN_SOLID}><Check size={15} /> Save</button></div>
+    </form> : <>
+      <div className="mt-6"><h1 className="m-0 text-[clamp(1.7rem,3vw,2.15rem)] font-medium leading-[1.12] tracking-[-0.045em]">{item.title}</h1>{item.organization && <p className="mt-1.5 text-[0.9rem] text-muted">{item.organization}</p>}</div>
+      <div className="mt-4 flex flex-wrap gap-3.5 text-[0.78rem] text-muted">
+        {item.deadline && <span className="inline-flex items-center gap-1.5"><Clock3 size={13} /> Due {dateLabel(item.deadline)}</span>}
+        {item.location && <span>{item.location}</span>}
+        {item.link && <a className="inline-flex items-center gap-1.5 text-ink underline decoration-line underline-offset-4 hover:decoration-current" href={item.link} target="_blank" rel="noreferrer"><ExternalLink size={13} /> Opportunity page</a>}
+      </div>
+      {item.notes && <div className="mt-5 rounded-[10px] bg-surface p-4"><p className={EYEBROW}>Notes</p><p className="mt-2 whitespace-pre-wrap text-[0.82rem] leading-relaxed text-muted">{item.notes}</p></div>}
+      <section className="mt-6 border-t border-line pt-6">
+        <div className="flex items-start justify-between gap-4 text-faint"><div><p className={EYEBROW}>Two separate journeys</p><h3 className="mt-1.5 text-xl font-medium tracking-[-0.03em] text-ink">Progress</h3></div><Users size={17} /></div>
+        <div className="mt-4 grid gap-2.5 sm:grid-cols-2">{people.map((p) => {
+          const tracker = trackers.find((t) => t.member_id === p.id);
+          const isYou = p.id === member.id;
+          return <div className={`min-w-0 rounded-[10px] border border-line bg-surface-2 p-3.5 ${isYou ? 'border-ink bg-paper' : ''}`} key={p.id}>
+            <div className="flex min-w-0 items-center gap-2">
+              <span className={`grid size-[26px] shrink-0 place-items-center rounded-full font-pixel text-[0.55rem] ${isYou ? 'bg-ink text-paper' : 'border border-line bg-transparent text-ink'}`}>{initials(p.name)}</span>
+              <div className="grid min-w-0 gap-1"><b className="truncate text-[0.78rem] font-medium">{isYou ? 'You' : p.name}</b><span className={statusPillClass(tracker?.status || 'not_started', true)}>{statusLabel(tracker)}</span></div>
+              {tracker?.status === 'response' && <Lock size={12} className="ml-auto text-muted" />}
+            </div>
+            {tracker?.status === 'response' && <div className="mt-3 border-t border-line pt-2.5"><span className="inline-block rounded-full bg-ink px-2 py-0.5 font-pixel text-[0.54rem] uppercase tracking-[0.05em] text-paper">{tracker.outcome || 'Response'}</span>{tracker.response_note && <p className="mt-2 text-[0.76rem] leading-relaxed text-muted">{tracker.response_note}</p>}</div>}
+            {tracker?.status === 'not_interested' && tracker.response_note && <div className="mt-3 border-t border-line pt-2.5"><span className="inline-block rounded-full bg-surface px-2 py-0.5 font-pixel text-[0.54rem] uppercase tracking-[0.05em] text-muted">Passed</span><p className="mt-2 text-[0.76rem] leading-relaxed text-muted">{tracker.response_note}</p></div>}
+            {tracker?.date_applied && <div className="mt-2.5 border-t border-line pt-2 font-pixel text-[0.55rem] uppercase tracking-[0.06em] text-faint">Submitted {dateLabel(tracker.date_applied)}</div>}
+          </div>;
+        })}</div>
+        <p className="mt-3.5 text-[0.72rem] leading-relaxed text-faint">Drag your own card on the board to move your progress. Locked responses stay read-only.</p>
       </section>
-      <section className="drawer-section drawer-activity"><span className="drawer-label">RECENT ACTIVITY</span>{activity.slice(0, 4).length ? activity.slice(0, 4).map((a) => <ActivityLine key={a.id} entry={a} />) : <div className="activity-empty">No activity logged yet.</div>}</section>
+      <section className="mt-6 border-t border-line pt-6">
+        <div className="flex items-start justify-between gap-4 text-faint"><div><p className={EYEBROW}>Keep each other in the loop</p><h3 className="mt-1.5 text-xl font-medium tracking-[-0.03em] text-ink">Comments <span className="ml-1 inline-grid size-[18px] place-items-center rounded-full bg-surface font-pixel text-[0.55rem] align-[2px] text-muted">{comments.length}</span></h3></div><MessageCircle size={17} /></div>
+        <div className="mt-4 grid max-h-[280px] gap-3 overflow-auto">{comments.length ? comments.map((c) => { const m = memberById(c.author_id); return <div className="flex items-start gap-2" key={c.id}><span className="grid size-6 shrink-0 place-items-center rounded-full bg-ink font-pixel text-[0.5rem] text-paper">{initials(m.name)}</span><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><b className="text-[0.76rem] font-medium">{m.name}</b><time className="font-pixel text-[0.55rem] tracking-[0.04em] text-faint">{since(c.created_at)}</time></div><p className="mt-0.5 whitespace-pre-wrap break-words text-[0.8rem] leading-relaxed text-muted">{c.body}</p></div></div>; }) : <div className="py-2 text-[0.78rem] text-faint">No comments yet. Share a thought or offer to review.</div>}</div>
+        <form className="mt-3.5 flex items-center gap-1.5 rounded-full border border-line py-1 pl-3 pr-1 focus-within:border-ink" onSubmit={onComment}><input className="min-w-0 flex-1 border-0 bg-transparent text-[0.8rem] text-ink outline-none placeholder:text-faint" value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder="Write a comment…" aria-label="Write a comment" /><button className="grid size-[30px] place-items-center rounded-full bg-ink text-paper disabled:opacity-35" disabled={!commentText.trim()} aria-label="Send comment"><Send size={15} /></button></form>
+      </section>
+      <section className="mt-6 border-t border-line pt-6"><p className={EYEBROW}>Recent activity</p>{activity.slice(0, 4).length ? activity.slice(0, 4).map((a) => <ActivityLine key={a.id} entry={a} compact />) : <div className="py-2 text-[0.78rem] text-faint">No activity logged yet.</div>}</section>
     </>}
   </aside></div>;
 }
 
 function ActivityPage({ activity, items }) {
-  return <div className="activity-page"><div className="section-kicker"><Activity size={13} /> SHARED HISTORY</div><h1>Activity<span className="title-period">.</span></h1><p className="activity-intro">A running log of your shared momentum.</p><div className="activity-timeline">{activity.length ? activity.map((a) => <ActivityLine key={a.id} entry={a} item={items.find((i) => i.id === a.opportunity_id)} large />) : <div className="activity-empty large-empty"><Sparkles size={20} /><b>Nothing on the record yet</b><span>Adding, moving and commenting will show up here.</span></div>}</div></div>;
+  return <div className="max-w-[60rem]">
+    <div className="pt-10 pb-6 md:pt-[clamp(2.5rem,5vw,4.5rem)]"><p className={EYEBROW}>Bomb site — shared history</p><h1 className="mt-2.5 mb-2 text-[clamp(2.4rem,5vw,4.25rem)] font-medium leading-[0.95] tracking-[-0.05em]">Activity<span className="font-serif font-normal italic">.</span></h1><p className="max-w-[52ch] text-[clamp(0.95rem,1.2vw,1.05rem)] tracking-[-0.01em] text-muted">Every add, move, and note from both sides.</p></div>
+    <div className="mt-5 border-t border-line">{activity.length ? activity.map((a) => <ActivityLine key={a.id} entry={a} item={items.find((i) => i.id === a.opportunity_id)} large />) : <div className="grid justify-items-center gap-2 py-16 text-center"><Activity size={20} className="text-muted" /><b className="text-[1.05rem] font-medium">Nothing on the record yet</b><span className="text-[0.85rem] text-muted">Adding, moving and commenting will show up here.</span></div>}</div>
+  </div>;
 }
-function ActivityLine({ entry, item, large = false }) {
+
+function ActivityLine({ entry, item, large = false, compact = false }) {
   const who = memberById(entry.actor_id);
   const detail = entry.detail || {};
   let phrase = 'updated an opportunity';
@@ -506,8 +649,21 @@ function ActivityLine({ entry, item, large = false }) {
   else if (entry.action === 'commented') phrase = `left a comment on “${item?.title || 'an opportunity'}”`;
   else if (entry.action === 'status_changed') phrase = `moved ${detail.member_id === 'elijah' ? 'Elijah’s' : 'Imran’s'} “${item?.title || 'opportunity'}” to ${STATUS_LABELS[detail.to] || detail.to}`;
   else if (entry.action === 'response_logged') phrase = `logged a ${detail.outcome || 'response'} for “${item?.title || 'an opportunity'}”`;
-  return <div className={`activity-line ${large ? 'activity-line-large' : ''}`}><span className="activity-avatar avatar" style={{ '--avatar': who.color }}>{initials(who.name)}</span><div className="activity-copy"><p><b>{who.name}</b> {phrase}</p>{entry.action === 'response_logged' && detail.note && <div className="activity-note">“{detail.note}”</div>}<time>{since(entry.created_at)}</time></div><span className={`activity-kind kind-${entry.action}`}>{entry.action === 'status_changed' ? 'STATUS' : entry.action === 'response_logged' ? 'RESPONSE' : entry.action === 'commented' ? 'COMMENT' : 'UPDATE'}</span></div>;
+  return <div className={`flex items-start border-b border-line ${large ? 'gap-3.5 py-4' : compact ? 'gap-2 py-2.5' : 'gap-2.5 py-3'}`}>
+    <span className={`grid shrink-0 place-items-center rounded-full bg-ink font-pixel text-paper ${large ? 'size-[26px] text-[0.55rem]' : 'size-6 text-[0.5rem]'}`}>{initials(who.name)}</span>
+    <div className="min-w-0 flex-1"><p className="mt-0.5 mb-0.5 text-[0.82rem] leading-relaxed text-muted"><b className="font-medium text-ink">{who.name}</b> {phrase}</p>{entry.action === 'response_logged' && detail.note && <div className="my-1.5 border-l-2 border-ink bg-surface px-2.5 py-2 text-[0.76rem] leading-relaxed text-muted">“{detail.note}”</div>}<time className="font-pixel text-[0.55rem] tracking-[0.04em] text-faint">{since(entry.created_at)}</time></div>
+    {!compact && <span className="mt-0.5 rounded-full border border-line px-2 py-0.5 font-pixel text-[0.52rem] uppercase tracking-[0.06em] text-faint">{entry.action === 'status_changed' ? 'Status' : entry.action === 'response_logged' ? 'Response' : entry.action === 'commented' ? 'Comment' : 'Update'}</span>}
+  </div>;
 }
-function EssaysPlaceholder() { return <div className="coming-page"><div className="coming-icon"><FileText size={20} /></div><span className="section-kicker">ON THE LIST</span><h1>Essays &amp; drafts<span className="title-period">.</span></h1><p>We’ll give your essays their own home after the shared board is humming. For now, keep drafts in your existing documents and link them from an opportunity’s notes.</p><span className="coming-ribbon">COMING IN A NEXT PASS</span></div>; }
+
+function EssaysPlaceholder() {
+  return <div className="mx-auto my-[clamp(3rem,9vw,8rem)] max-w-[34rem] text-center">
+    <div className="mx-auto mb-5 grid size-11 place-items-center rounded-full border border-line text-muted"><FileText size={20} /></div>
+    <p className={EYEBROW}>On the list</p>
+    <h1 className="mt-2.5 mb-3 text-[clamp(2rem,4vw,3rem)] font-medium leading-none tracking-[-0.045em]">Essays &amp; drafts<span className="font-serif font-normal italic">.</span></h1>
+    <p className="text-[0.9rem] leading-[1.7] text-muted">Essays get their own home once the shared board is humming. For now, keep drafts in your existing documents and link them from an opportunity’s notes.</p>
+    <span className="mt-4 inline-block rounded-full border border-line px-2.5 py-1 font-pixel text-[0.55rem] uppercase tracking-[0.08em] text-faint">Coming in a next pass</span>
+  </div>;
+}
 
 createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>);
