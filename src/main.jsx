@@ -328,7 +328,7 @@ function App() {
   if (!session || !currentMember) {
     return <LoginScreen
       email={loginEmail} setEmail={setLoginEmail} password={loginPassword} setPassword={setLoginPassword}
-      onSubmit={submitLogin} error={authError} busy={busy} configured={!!supabase}
+      onSubmit={submitLogin} error={authError} busy={busy}
     />;
   }
   if (!member) return <LoadingScreen label="Opening Coffer…" />;
@@ -526,7 +526,7 @@ function ProgressPerson({ person, tracker, you = false }) {
   </div>;
 }
 
-function LoginScreen({ email, setEmail, password, setPassword, onSubmit, error, busy, configured }) {
+function LoginScreen({ email, setEmail, password, setPassword, onSubmit, error, busy }) {
   return <div className="grid min-h-screen lg:grid-cols-[1.1fr_0.9fr]">
     <aside className="relative flex min-h-[280px] flex-col justify-between overflow-hidden bg-ink p-6 text-paper sm:p-10 lg:min-h-screen lg:p-[clamp(2rem,4vw,3.5rem)]">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.055)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.055)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:linear-gradient(155deg,#000_0%,transparent_78%)]" />
@@ -544,7 +544,6 @@ function LoginScreen({ email, setEmail, password, setPassword, onSubmit, error, 
         <p className={`${EYEBROW} mt-10`}>Sign in</p>
         <h2 className="mt-2.5 mb-2.5 text-[clamp(2rem,3.5vw,3rem)] font-medium leading-[0.98] tracking-[-0.045em]">Get in.<br />Get after it.</h2>
         <p className="text-[11px] leading-[1.65] text-muted">Use your own account. The board is shared; your progress is yours.</p>
-        {!configured && <div className="mt-4 flex gap-2 rounded-[9px] border border-line bg-surface p-3 text-[11px] leading-relaxed text-muted"><Lock size={16} className="mt-0.5 shrink-0" /><div><b className="font-medium text-ink">Backend setup needed</b><span className="block">Connect the Supabase project first; see <code className="font-pixel text-[11px]">SETUP.md</code>.</span></div></div>}
         <form onSubmit={onSubmit} className="mt-8 grid gap-3.5">
           <label className="grid gap-1.5 text-[11px] text-muted">Your account<select className="w-full border-0 border-b border-line bg-transparent py-2.5 text-[0.9rem] text-ink outline-none transition-colors focus:border-ink" value={email} onChange={(e) => setEmail(e.target.value)}>{MEMBERS.map((m) => <option value={m.email} key={m.id}>{m.name} · {m.email}</option>)}</select></label>
           <label className="grid gap-1.5 text-[11px] text-muted">Password<input type="password" autoComplete="current-password" className="w-full border-0 border-b border-line bg-transparent py-2.5 text-[0.9rem] text-ink outline-none transition-colors focus:border-ink" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" required /></label>
