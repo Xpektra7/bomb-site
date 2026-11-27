@@ -17,11 +17,11 @@ const MEMBERS = [
   { id: 'elijah', name: 'Elijah', email: 'oloyedeelijah23@gmail.com' },
 ];
 const COLUMNS = [
-  { id: 'not_started', label: 'Not started' },
-  { id: 'in_progress', label: 'In progress' },
-  { id: 'submitted', label: 'Submitted' },
-  { id: 'response', label: 'Response' },
-  { id: 'not_interested', label: 'Not interested / not eligible' },
+  { id: 'not_started', label: 'Not started', addCard: false },
+  { id: 'in_progress', label: 'In progress', addCard: false },
+  { id: 'submitted', label: 'Submitted', addCard: false },
+  { id: 'response', label: 'Response', addCard: false },
+  { id: 'not_interested', label: 'Not interested / not eligible', addCard: false },
 ];
 const STATUS_LABELS = Object.fromEntries(COLUMNS.map((c) => [c.id, c.label]));
 const OUTCOMES = ['Offer', 'Rejected', 'Interview', 'Waitlisted', 'Other'];
