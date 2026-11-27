@@ -48,55 +48,17 @@ The database is protected by RLS. Only the two hardcoded emails can join; never 
 
 ## 4. Connect your AI assistant (MCP)
 
-Coffer ships a local MCP server so OpenCode can read and update the board as you. It signs in with **your own** Supabase account, so row-level security applies exactly as it does in the browser. There is no shared or service-role key.
+The repository includes a local MCP server so OpenCode can read and update the board as you, using your own Supabase account. Full setup, tool list, guardrails and troubleshooting live in [`README.md`](./README.md#mcp-server).
 
-Each person does this on their own machine:
-
-1. Install dependencies once: `npm install`.
-2. Run the login helper and enter your own Coffer email and password:
-
-   ```sh
-   npm run mcp:login
-   ```
-
-   It verifies the sign-in, confirms your membership, and writes `.env.mcp.local` (git-ignored, `chmod 600`) with `COFFER_EMAIL` and `COFFER_PASSWORD`. Your password is stored in that file only; delete the file to revoke access.
-
-3. Register the server with OpenCode:
-
-   ```sh
-   opencode mcp add coffer -- node "$PWD/mcp/server.mjs"
-   ```
-
-4. Start OpenCode and run `/mcps` to confirm `coffer` is connected. Ask it "who am I in Coffer?" to verify the identity.
-
-### What the assistant can do
-
-| Tool | Purpose |
-| --- | --- |
-| `whoami` | Show which member the connection is signed in as. |
-| `list_opportunities` | Search the shared board, with your progress and your teammate's. |
-| `get_opportunity` | Full detail: fields, both trackers, comments, recent activity. |
-| `add_opportunity` | Add an opportunity; both people get a fresh tracker. |
-| `update_opportunity` | Edit shared fields (title, deadline, link, notes, …). |
-| `update_my_progress` | Move **your own** status, priority, or applied date. |
-| `add_comment` | Leave a shared comment. |
-| `list_activity` | Read the recent history. |
-
-Guardrails baked into the server:
-
-- It only ever writes your own tracker; the other person's progress is read-only.
-- A response is terminal. `update_my_progress` refuses once your tracker is locked, requires an outcome, and requires a reason for a rejection.
-- It never invents ids: read first with `list_opportunities`.
-
-Self-check without OpenCode:
+The short version, run by each person on their own machine:
 
 ```sh
-node mcp/smoke.mjs
+npm install
+npm run mcp:login                                    # your own email + password
+opencode mcp add coffer -- node "$PWD/mcp/server.mjs"
 ```
 
-If it prints `Coffer MCP has no signed-in person`, run `npm run mcp:login` again.
-
-> Note: `.env.mcp.local` is separate from `.env.local`. The web app needs only the URL and publishable key; the MCP server additionally needs your credentials.
+Then run `/mcps` in OpenCode and confirm `coffer` is connected.
 
 ## Board behavior
 
