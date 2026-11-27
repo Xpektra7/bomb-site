@@ -107,7 +107,7 @@ try {
   if (memberError || !member) throw new Error(memberError?.message || 'No member record found.');
 
   const content = [
-    '# Coffer MCP credentials. Created by `npm run mcp:login`. Never commit this file.',
+    '# Coffer MCP credentials. Created by `bun run mcp:login`. Never commit this file.',
     `COFFER_SUPABASE_URL=${url}`,
     `COFFER_SUPABASE_ANON_KEY=${key}`,
     `COFFER_EMAIL=${email}`,

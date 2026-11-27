@@ -4,6 +4,8 @@ A shared two-person opportunity tracker built with React, Vite, SVAR React Kanba
 
 Start with [`SETUP.md`](./SETUP.md) for Supabase, local development and Vercel deployment steps.
 
+The project installs and builds with [Bun](https://bun.sh): `bun.lock` is committed and `package-lock.json` is not. Vercel picks Bun automatically when it finds `bun.lock`.
+
 ## MCP server
 
 Coffer ships a local [MCP](https://modelcontextprotocol.io) server so an AI assistant (OpenCode here) can read and update the board as **you**. It runs on your own machine over stdio and signs in with your own Supabase account, so row-level security applies exactly as it does in the browser. There is no shared credential and no service-role key.
@@ -11,13 +13,13 @@ Coffer ships a local [MCP](https://modelcontextprotocol.io) server so an AI assi
 ### 1. Install dependencies
 
 ```sh
-npm install
+bun install
 ```
 
 ### 2. Sign in as yourself
 
 ```sh
-npm run mcp:login
+bun run mcp:login
 ```
 
 Enter your own Coffer email and password. The helper verifies the sign-in and your workspace membership, then writes `.env.mcp.local` (git-ignored, `chmod 600`). Your password lives only in that file — delete it to revoke this machine's access.
@@ -42,7 +44,7 @@ Without OpenCode, the bundled self-check lists the tools and calls `whoami`:
 node mcp/smoke.mjs
 ```
 
-If it reports `Coffer MCP has no signed-in person`, run `npm run mcp:login` again.
+If it reports `Coffer MCP has no signed-in person`, run `bun run mcp:login` again.
 
 ### Tools
 
@@ -68,9 +70,9 @@ If it reports `Coffer MCP has no signed-in person`, run `npm run mcp:login` agai
 
 | Symptom | Fix |
 | --- | --- |
-| `Coffer MCP has no signed-in person` | `npm run mcp:login` |
+| `Coffer MCP has no signed-in person` | `bun run mcp:login` |
 | `Coffer is not configured` | Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to `.env.local` |
-| `Coffer sign-in failed` | Wrong password, or the account was rotated — rerun `npm run mcp:login` |
+| `Coffer sign-in failed` | Wrong password, or the account was rotated — rerun `bun run mcp:login` |
 | `Could not open the Coffer workspace` | The email is not one of the two allowlisted members |
 | Server missing from `/mcps` | Re-run `opencode mcp add` with the absolute path to `mcp/server.mjs` |
 

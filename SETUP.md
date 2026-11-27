@@ -31,8 +31,8 @@ VITE_SUPABASE_ANON_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
 Then run:
 
 ```sh
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 Vite prints a local address (usually `http://localhost:5173`).
@@ -40,7 +40,7 @@ Vite prints a local address (usually `http://localhost:5173`).
 ## 3. Deploy to Vercel
 
 1. Push this project to a private GitHub repository.
-2. Import the repository into Vercel. Vercel detects Vite automatically.
+2. Import the repository into Vercel. Vercel detects Vite automatically and installs with Bun because `bun.lock` is committed.
 3. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under **Project → Settings → Environment Variables** for Production and Preview.
 4. Deploy. Add the Vercel site URL to **Supabase → Authentication → URL Configuration → Site URL** (and Redirect URLs if prompted).
 
@@ -53,8 +53,8 @@ The repository includes a local MCP server so OpenCode can read and update the b
 The short version, run by each person on their own machine:
 
 ```sh
-npm install
-npm run mcp:login                                    # your own email + password
+bun install
+bun run mcp:login                                    # your own email + password
 opencode mcp add coffer -- node "$PWD/mcp/server.mjs"
 ```
 

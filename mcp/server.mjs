@@ -62,12 +62,12 @@ function auth() {
 async function connect() {
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     throw new Error(
-      'Coffer is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local, then run `npm run mcp:login`.',
+      'Coffer is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local, then run `bun run mcp:login`.',
     );
   }
   if (!EMAIL || !PASSWORD) {
     throw new Error(
-      'Coffer MCP has no signed-in person. Run `npm run mcp:login` in the project to write .env.mcp.local.',
+      'Coffer MCP has no signed-in person. Run `bun run mcp:login` in the project to write .env.mcp.local.',
     );
   }
 
