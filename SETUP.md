@@ -1,4 +1,4 @@
-# Bomb site — setup guide
+# Coffer — setup guide
 
 A private, shared opportunity tracker for Imran and Elijah.
 

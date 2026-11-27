@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import './styles.css';
 
-const WORKSPACE_NAME = 'Bomb site';
+const WORKSPACE_NAME = 'Coffer';
 const WORKSPACE_ID = 'e72ec8e1-640b-4e58-b474-902691a1c3df';
 const MEMBERS = [
   { id: 'imran', name: 'Imran', email: 'ogungbayiimran@gmail.com' },
@@ -331,7 +331,7 @@ function App() {
       onSubmit={submitLogin} error={authError} busy={busy} configured={!!supabase}
     />;
   }
-  if (!member) return <LoadingScreen label="Opening Bomb site…" />;
+  if (!member) return <LoadingScreen label="Opening Coffer…" />;
 
   const selected = items.find((x) => x.id === selectedId);
   const stats = [
@@ -344,8 +344,8 @@ function App() {
   return <div className="min-h-screen">
     <header className="sticky top-0 z-50 border-b border-line bg-paper/90 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-[100rem] items-center gap-5 px-[var(--gutter)] sm:gap-8">
-        <button className="flex items-center gap-2.5 bg-transparent p-0" onClick={() => setPage('board')} aria-label="Bomb site — board">
-          <span className="grid size-8 place-items-center rounded-lg bg-ink font-pixel text-[11px] tracking-[0.03em] text-paper">B/S</span>
+        <button className="flex items-center gap-2.5 bg-transparent p-0" onClick={() => setPage('board')} aria-label="Coffer — board">
+          <img className="size-8 object-contain" src="/coffer-logo.webp" alt="" />
           <span className="hidden text-[0.95rem] font-medium tracking-[-0.02em] sm:inline">{WORKSPACE_NAME}</span>
         </button>
         <nav className="flex h-full items-center gap-5 sm:gap-7" aria-label="Primary">
@@ -375,7 +375,7 @@ function App() {
       {page === 'board' && <>
         <section className="flex flex-col items-start justify-between gap-5 pt-10 pb-8 md:flex-row md:items-end md:pt-[clamp(2.5rem,5vw,4.5rem)]">
           <div>
-            <p className={EYEBROW}>Bomb site — shared desk</p>
+            <p className={EYEBROW}>Coffer — shared desk</p>
             <h1 className="mt-2.5 mb-2 text-[clamp(2.4rem,5vw,4.25rem)] font-medium leading-[0.95] tracking-[-0.05em] text-balance">Opportunity board<span className="font-serif font-normal italic">.</span></h1>
             <p className="max-w-[52ch] text-[clamp(0.95rem,1.2vw,1.05rem)] tracking-[-0.01em] text-muted">One shared list, two separate journeys. Move your own card; keep an eye on {teammate.name}’s.</p>
           </div>
@@ -530,17 +530,17 @@ function LoginScreen({ email, setEmail, password, setPassword, onSubmit, error, 
   return <div className="grid min-h-screen lg:grid-cols-[1.1fr_0.9fr]">
     <aside className="relative flex min-h-[280px] flex-col justify-between overflow-hidden bg-ink p-6 text-paper sm:p-10 lg:min-h-screen lg:p-[clamp(2rem,4vw,3.5rem)]">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.055)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.055)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:linear-gradient(155deg,#000_0%,transparent_78%)]" />
-      <div className="relative flex items-center gap-2.5 text-[0.9rem] font-medium"><span className="grid size-8 place-items-center rounded-lg bg-paper font-pixel text-[11px] tracking-[0.03em] text-ink">B/S</span><span>Bomb site</span></div>
+      <div className="relative flex items-center gap-2.5 text-[0.9rem] font-medium"><img className="size-8 object-contain brightness-0 invert" src="/coffer-logo.webp" alt="" /><span>Coffer</span></div>
       <div className="relative max-w-[34rem]">
         <p className="font-pixel text-[11px] leading-none uppercase tracking-[0.12em] text-white/55">A shared opportunity desk</p>
         <h1 className="mt-4 mb-5 text-[clamp(2.9rem,5.6vw,5.6rem)] font-medium leading-[0.9] tracking-[-0.06em]">Two people.<br />One list.<br /><em className="font-serif font-normal italic tracking-[-0.04em] text-white/60">Follow through.</em></h1>
         <p className="max-w-[36ch] text-[0.95rem] leading-[1.65] text-white/60">A small private space to find the next thing, track it honestly, and keep each other moving.</p>
       </div>
-      <div className="relative flex justify-between gap-4 font-pixel text-[11px] uppercase tracking-[0.1em] text-white/45"><span>Private to two accounts</span><span>B/S — 01</span></div>
+      <div className="relative flex justify-between gap-4 font-pixel text-[11px] uppercase tracking-[0.1em] text-white/45"><span>Private to two accounts</span><span>Coffer — 01</span></div>
     </aside>
     <main className="flex items-center justify-center p-6 sm:p-10 lg:p-[clamp(1.5rem,4vw,3.5rem)]">
       <div className="w-full max-w-[390px]">
-        <div className="flex items-center gap-2 text-[0.95rem] font-medium"><span className="grid size-8 place-items-center rounded-lg bg-ink font-pixel text-[11px] tracking-[0.03em] text-paper">B/S</span><span>Bomb site</span></div>
+        <div className="flex items-center gap-2 text-[0.95rem] font-medium"><img className="size-8 object-contain" src="/coffer-logo.webp" alt="" /><span>Coffer</span></div>
         <p className={`${EYEBROW} mt-10`}>Sign in</p>
         <h2 className="mt-2.5 mb-2.5 text-[clamp(2rem,3.5vw,3rem)] font-medium leading-[0.98] tracking-[-0.045em]">Get in.<br />Get after it.</h2>
         <p className="text-[11px] leading-[1.65] text-muted">Use your own account. The board is shared; your progress is yours.</p>
@@ -558,7 +558,7 @@ function LoginScreen({ email, setEmail, password, setPassword, onSubmit, error, 
 }
 
 function LoadingScreen({ label = 'Warming up your desk…' }) {
-  return <div className="grid min-h-screen place-content-center justify-items-center gap-3.5 bg-paper"><div className="grid size-12 place-items-center rounded-xl bg-ink font-pixel text-[0.7rem] text-paper animate-pulse">B/S</div><span className="font-pixel text-[11px] uppercase tracking-[0.1em] text-faint">{label}</span></div>;
+  return <div className="grid min-h-screen place-content-center justify-items-center gap-3.5 bg-paper"><img className="size-12 animate-pulse object-contain" src="/coffer-logo.webp" alt="" /><span className="font-pixel text-[11px] uppercase tracking-[0.1em] text-faint">{label}</span></div>;
 }
 
 function OpportunityForm({ onClose, onSave }) {
@@ -659,7 +659,7 @@ function OpportunityDrawer({ item, trackers, member, teammate, comments, activit
 
 function ActivityPage({ activity, items }) {
   return <div className="max-w-[60rem]">
-    <div className="pt-10 pb-6 md:pt-[clamp(2.5rem,5vw,4.5rem)]"><p className={EYEBROW}>Bomb site — shared history</p><h1 className="mt-2.5 mb-2 text-[clamp(2.4rem,5vw,4.25rem)] font-medium leading-[0.95] tracking-[-0.05em]">Activity<span className="font-serif font-normal italic">.</span></h1><p className="max-w-[52ch] text-[clamp(0.95rem,1.2vw,1.05rem)] tracking-[-0.01em] text-muted">Every add, move, and note from both sides.</p></div>
+    <div className="pt-10 pb-6 md:pt-[clamp(2.5rem,5vw,4.5rem)]"><p className={EYEBROW}>Coffer — shared history</p><h1 className="mt-2.5 mb-2 text-[clamp(2.4rem,5vw,4.25rem)] font-medium leading-[0.95] tracking-[-0.05em]">Activity<span className="font-serif font-normal italic">.</span></h1><p className="max-w-[52ch] text-[clamp(0.95rem,1.2vw,1.05rem)] tracking-[-0.01em] text-muted">Every add, move, and note from both sides.</p></div>
     <div className="mt-5 border-t border-line">{activity.length ? activity.map((a) => <ActivityLine key={a.id} entry={a} item={items.find((i) => i.id === a.opportunity_id)} large />) : <div className="grid justify-items-center gap-2 py-16 text-center"><Activity size={20} className="text-muted" /><b className="text-[1.05rem] font-medium">Nothing on the record yet</b><span className="text-[0.85rem] text-muted">Adding, moving and commenting will show up here.</span></div>}</div>
   </div>;
 }

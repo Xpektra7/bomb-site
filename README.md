@@ -1,4 +1,4 @@
-# Bomb site
+# Coffer
 
 A shared two-person opportunity tracker built with React, Vite, SVAR React Kanban and Supabase.
 
