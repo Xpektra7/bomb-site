@@ -530,7 +530,7 @@ function LoginScreen({ email, setEmail, password, setPassword, onSubmit, error, 
   return <div className="grid min-h-screen lg:grid-cols-[1.1fr_0.9fr]">
     <aside className="relative flex min-h-[280px] flex-col justify-between overflow-hidden bg-ink p-6 text-paper sm:p-10 lg:min-h-screen lg:p-[clamp(2rem,4vw,3.5rem)]">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.055)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.055)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:linear-gradient(155deg,#000_0%,transparent_78%)]" />
-      <div className="relative flex items-center gap-2.5 text-[0.9rem] font-medium"><img className="size-8 object-contain brightness-0 invert" src="/coffer-logo.webp" alt="" /><span>Coffer</span></div>
+      <div className="relative flex items-center gap-2.5 text-[0.9rem] font-medium"><img className="size-8 object-contain invert" src="/coffer-logo.webp" alt="" /><span>Coffer</span></div>
       <div className="relative max-w-[34rem]">
         <p className="font-pixel text-[11px] leading-none uppercase tracking-[0.12em] text-white/55">A shared opportunity desk</p>
         <h1 className="mt-4 mb-5 text-[clamp(2.9rem,5.6vw,5.6rem)] font-medium leading-[0.9] tracking-[-0.06em]">Two people.<br />One list.<br /><em className="font-serif font-normal italic tracking-[-0.04em] text-white/60">Follow through.</em></h1>
