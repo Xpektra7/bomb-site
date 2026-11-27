@@ -185,6 +185,9 @@ $$;
 create or replace function public.join_bomb_site()
 returns table(member_id text, display_name text, workspace_id uuid)
 language plpgsql security definer set search_path = '' as $$
+#variable_conflict use_column
+-- The OUT parameters share names with columns, so prefer columns in ambiguous spots
+-- (the ON CONFLICT target below) instead of raising 42702.
 declare
   v_email text;
   v_member text;
